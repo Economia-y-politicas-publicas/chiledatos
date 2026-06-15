@@ -3,37 +3,34 @@ project:
   output-dir: _site
 
 website:
-  title: "Datos Chile"
-  description: "Análisis de datos públicos chilenos"
-  favicon: assets/favicon.ico
-
+  title: "Economía y Políticas Públicas"
+  description: "Hub de información económica sobre Chile y el mundo"
   navbar:
     background: dark
     foreground: light
     left:
-          - href: index.qmd
-            text: Inicio
-          - href: pages/educacion.qmd
-            text: Educación
-          - href: pages/economia.qmd
-            text: Economía
-          - href: pages/finanzas.qmd
-            text: Finanzas Públicas
+      - href: index.qmd
+        text: Inicio
+      - href: pages/educacion.qmd
+        text: Educación
+      - href: pages/economia.qmd
+        text: Economía
+      - href: pages/finanzas_publicas.qmd
+        text: Finanzas Públicas
     right:
       - icon: github
-        href: https://github.com/tuusuario/mi-proyecto
-
+        href: https://github.com/Economia-y-politicas-publicas/mi-proyecto-datos
   page-footer:
-    left: "© 2025 Mi Proyecto · Datos públicos de Chile"
+    left: "© 2025 Economía y Políticas Públicas · Datos públicos de Chile"
     right:
       - icon: github
-        href: https://github.com/tuusuario/mi-proyecto
+        href: https://github.com/Economia-y-politicas-publicas/mi-proyecto-datos
 
 format:
   html:
     theme:
       light: [flatly, styles/custom.scss]
-      dark:  [darkly,  styles/custom.scss]
+      dark:  [darkly, styles/custom.scss]
     toc: true
     toc-depth: 3
     toc-title: "En esta página"
@@ -45,7 +42,7 @@ format:
     fig-height: 5
 
 execute:
-  freeze: auto        # re-ejecuta solo archivos modificados
-  echo: false         # oculta código por defecto (se puede mostrar con code-fold)
+  freeze: auto
+  echo: false
   warning: false
   message: false
