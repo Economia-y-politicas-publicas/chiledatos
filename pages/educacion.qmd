@@ -1,0 +1,199 @@
+---
+title: "Radiografía del CAE"
+subtitle: "Crédito con Aval del Estado: morosidad por carrera e institución"
+date: last-modified
+author: "Tu Nombre"
+---
+
+```{python}
+#| label: setup
+#| include: false
+
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+import numpy as np
+
+np.random.seed(99)
+
+# ── Datos simulados (reemplaza con pd.read_csv("../../data/cae.csv")) ──────────
+carreras = [
+    "Derecho", "Medicina", "Ingeniería Civil", "Psicología",
+    "Educación", "Administración", "Técnico en Enfermería",
+    "Gastronomía", "Diseño Gráfico", "Contador Auditor",
+]
+
+regiones = ["RM", "Valparaíso", "Biobío", "Maule", "La Araucanía"]
+
+n = 200
+df = pd.DataFrame({
+    "carrera":      np.random.choice(carreras, n),
+    "region":       np.random.choice(regiones, n),
+    "institucion":  np.random.choice(["U. Tradicional", "U. Privada", "IP", "CFT"], n,
+                                      p=[0.25, 0.35, 0.25, 0.15]),
+    "morosidad":    np.clip(np.random.normal(45, 15, n), 5, 95).round(1),
+    "deuda_promedio": np.random.randint(3_000_000, 18_000_000, n),
+    "n_deudores":   np.random.randint(100, 5000, n),
+})
+```
+
+::: {.callout-note}
+Los datos mostrados son **simulados** como ejemplo. Para usar datos reales del CAE,
+descárgalos desde el [portal de datos abiertos del MINEDUC](https://datosabiertos.mineduc.cl).
+:::
+
+## Contexto
+
+El **Crédito con Aval del Estado (CAE)** financia estudios de educación superior en Chile.
+Al cierre de 2023, más de **700.000 personas** tienen deuda vigente, con tasas de morosidad
+que varían fuertemente según carrera e institución.
+
+---
+
+## 1. Morosidad por carrera
+
+```{python}
+#| label: morosidad-carrera
+#| fig-cap: "Morosidad promedio (%) por carrera. Las barras de error muestran ±1 desviación estándar."
+
+resumen = (
+    df.groupby("carrera")["morosidad"]
+    .agg(["mean", "std", "count"])
+    .reset_index()
+    .sort_values("mean", ascending=True)
+)
+
+fig = go.Figure()
+fig.add_trace(go.Bar(
+    x=resumen["mean"],
+    y=resumen["carrera"],
+    orientation="h",
+    error_x=dict(type="data", array=resumen["std"], visible=True),
+    marker_color=resumen["mean"],
+    marker_colorscale="RdYlGn_r",
+    marker_showscale=True,
+    marker_colorbar=dict(title="Morosidad %"),
+    hovertemplate="<b>%{y}</b><br>Morosidad: %{x:.1f}%<extra></extra>",
+))
+
+fig.update_layout(
+    title="Morosidad promedio por carrera",
+    xaxis_title="Morosidad (%)",
+    yaxis_title="",
+    template="plotly_white",
+    font_family="Inter",
+    height=420,
+)
+fig.show()
+```
+
+## 2. Distribución por tipo de institución
+
+```{python}
+#| label: violin-institucion
+#| fig-cap: "Distribución de morosidad por tipo de institución."
+
+fig = px.violin(
+    df,
+    x="institucion",
+    y="morosidad",
+    color="institucion",
+    box=True,
+    points="outliers",
+    color_discrete_sequence=px.colors.qualitative.Pastel,
+    labels={"morosidad": "Morosidad (%)", "institucion": "Institución"},
+    template="plotly_white",
+)
+fig.update_layout(
+    showlegend=False,
+    font_family="Inter",
+    title="Morosidad por tipo de institución",
+)
+fig.show()
+```
+
+## 3. Mapa por región
+
+```{python}
+#| label: barras-region
+#| fig-cap: "Morosidad promedio por región."
+
+por_region = (
+    df.groupby("region")["morosidad"]
+    .mean()
+    .reset_index()
+    .sort_values("morosidad", ascending=False)
+)
+
+fig = px.bar(
+    por_region,
+    x="region",
+    y="morosidad",
+    color="morosidad",
+    color_continuous_scale="Reds",
+    text_auto=".1f",
+    labels={"morosidad": "Morosidad (%)", "region": "Región"},
+    template="plotly_white",
+)
+fig.update_layout(
+    title="Morosidad promedio por región",
+    font_family="Inter",
+    showlegend=False,
+    coloraxis_showscale=False,
+)
+fig.show()
+```
+
+## 4. Relación deuda vs. morosidad
+
+```{python}
+#| label: scatter-deuda
+#| fig-cap: "Cada punto es una carrera×institución. Tamaño proporcional al número de deudores."
+
+fig = px.scatter(
+    df,
+    x="deuda_promedio",
+    y="morosidad",
+    color="institucion",
+    size="n_deudores",
+    hover_name="carrera",
+    hover_data={"region": True, "deuda_promedio": ":,.0f", "morosidad": ":.1f%"},
+    labels={
+        "deuda_promedio": "Deuda promedio (CLP)",
+        "morosidad": "Morosidad (%)",
+        "institucion": "Institución",
+    },
+    color_discrete_sequence=px.colors.qualitative.Set2,
+    template="plotly_white",
+    opacity=0.7,
+)
+fig.update_layout(font_family="Inter", title="Deuda vs. Morosidad")
+fig.show()
+```
+
+## Tabla de datos
+
+```{python}
+#| label: tabla
+
+from IPython.display import HTML
+
+tabla = (
+    df.groupby(["carrera", "institucion"])
+    .agg(
+        morosidad_prom=("morosidad", "mean"),
+        deuda_prom=("deuda_promedio", "mean"),
+        n=("n_deudores", "sum"),
+    )
+    .reset_index()
+    .sort_values("morosidad_prom", ascending=False)
+    .head(20)
+)
+
+tabla["morosidad_prom"] = tabla["morosidad_prom"].map("{:.1f}%".format)
+tabla["deuda_prom"]     = tabla["deuda_prom"].map("${:,.0f}".format)
+tabla["n"]              = tabla["n"].map("{:,}".format)
+tabla.columns           = ["Carrera", "Institución", "Morosidad", "Deuda prom.", "Deudores"]
+
+HTML(tabla.to_html(index=False, classes="table table-striped table-hover dataframe"))
+```

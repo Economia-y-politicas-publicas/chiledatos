@@ -1,0 +1,37 @@
+---
+title: "Fuentes de datos"
+---
+
+Todos los datos utilizados en este sitio son públicos y descargables libremente.
+
+## Educación
+
+| Dataset | Fuente | Descarga |
+|---|---|---|
+| Crédito CAE — deudores y morosidad | INGRESA / MINEDUC | [datosabiertos.mineduc.cl](https://datosabiertos.mineduc.cl) |
+| Matrícula por carrera e institución | SIES | [sies.mineduc.cl](https://www.sies.cl) |
+| Resultados SIMCE | Agencia de Calidad | [agenciaeducacion.cl](https://www.agenciaeducacion.cl) |
+
+## Economía
+
+| Dataset | Fuente | Descarga |
+|---|---|---|
+| PIB y cuentas nacionales | Banco Central | [bcentral.cl](https://www.bcentral.cl) |
+| Empleo y desempleo | INE | [ine.gob.cl](https://www.ine.gob.cl) |
+| Deuda pública | Dipres | [dipres.gob.cl](https://www.dipres.gob.cl) |
+
+## Cómo usar los datos
+
+```python
+import pandas as pd
+
+# Ejemplo: cargar CSV desde datos abiertos MINEDUC
+df = pd.read_csv("data/cae_2023.csv", encoding="latin-1", sep=";")
+df.head()
+```
+
+## Licencia
+
+Los análisis y visualizaciones de este sitio se publican bajo licencia
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.es).
+Puedes reutilizarlos citando la fuente.

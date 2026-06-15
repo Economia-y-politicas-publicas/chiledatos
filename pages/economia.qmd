@@ -1,0 +1,80 @@
+---
+title: "Indicadores Económicos"
+subtitle: "Deuda pública, PIB y empleo en Chile"
+date: last-modified
+---
+
+```{python}
+#| label: setup
+#| include: false
+
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+import numpy as np
+
+np.random.seed(7)
+
+años = list(range(2000, 2025))
+pib        = np.cumsum(np.random.normal(3, 1.5, len(años))) + 100
+deuda_pib  = np.clip(np.cumsum(np.random.normal(0.5, 1, len(años))) + 5, 3, 40)
+desempleo  = np.clip(np.random.normal(7, 1.5, len(años)), 4, 12)
+
+df = pd.DataFrame({
+    "año": años,
+    "pib_crecimiento": np.random.normal(3.5, 2, len(años)).round(1),
+    "deuda_pib": deuda_pib.round(1),
+    "desempleo": desempleo.round(1),
+})
+```
+
+::: {.callout-note}
+Datos simulados como ejemplo. Fuentes reales: [Banco Central](https://www.bcentral.cl),
+[INE](https://www.ine.gob.cl).
+:::
+
+## Crecimiento del PIB
+
+```{python}
+fig = px.bar(
+    df, x="año", y="pib_crecimiento",
+    color="pib_crecimiento",
+    color_continuous_scale="RdYlGn",
+    range_color=[-5, 8],
+    labels={"pib_crecimiento": "Crecimiento PIB (%)", "año": "Año"},
+    template="plotly_white",
+)
+fig.update_layout(
+    title="Crecimiento anual del PIB (%)",
+    font_family="Inter",
+    coloraxis_showscale=False,
+)
+fig.show()
+```
+
+## Deuda pública / PIB
+
+```{python}
+fig = px.area(
+    df, x="año", y="deuda_pib",
+    labels={"deuda_pib": "Deuda / PIB (%)", "año": "Año"},
+    template="plotly_white",
+    color_discrete_sequence=["#e74c3c"],
+)
+fig.update_layout(title="Deuda pública como % del PIB", font_family="Inter")
+fig.show()
+```
+
+## Desempleo
+
+```{python}
+fig = px.line(
+    df, x="año", y="desempleo",
+    markers=True,
+    labels={"desempleo": "Tasa desempleo (%)", "año": "Año"},
+    template="plotly_white",
+    color_discrete_sequence=["#2980b9"],
+)
+fig.update_layout(title="Tasa de desempleo anual (%)", font_family="Inter")
+fig.show()
+```

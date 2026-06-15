@@ -1,0 +1,11 @@
+/.quarto/
+/_site/
+/_freeze/
+/__pycache__/
+*.pyc
+.env
+.DS_Store
+*.egg-info/
+.ipynb_checkpoints/
+
+**/*.quarto_ipynb

@@ -1,0 +1,49 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Mi Proyecto de Datos"
+  description: "Análisis de datos públicos chilenos"
+  favicon: assets/favicon.ico
+
+  navbar:
+    background: dark
+    foreground: light
+    left:
+      - href: index.qmd
+        text: Inicio
+      - href: pages/educacion.qmd
+        text: Educación
+      - href: pages/economia.qmd
+        text: Economía
+    right:
+      - icon: github
+        href: https://github.com/tuusuario/mi-proyecto
+
+  page-footer:
+    left: "© 2025 Mi Proyecto · Datos públicos de Chile"
+    right:
+      - icon: github
+        href: https://github.com/tuusuario/mi-proyecto
+
+format:
+  html:
+    theme:
+      light: [flatly, styles/custom.scss]
+      dark:  [darkly,  styles/custom.scss]
+    toc: true
+    toc-depth: 3
+    toc-title: "En esta página"
+    code-fold: true
+    code-tools: true
+    smooth-scroll: true
+    highlight-style: github
+    fig-width: 9
+    fig-height: 5
+
+execute:
+  freeze: auto        # re-ejecuta solo archivos modificados
+  echo: false         # oculta código por defecto (se puede mostrar con code-fold)
+  warning: false
+  message: false

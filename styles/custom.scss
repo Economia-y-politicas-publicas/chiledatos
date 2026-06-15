@@ -1,0 +1,26 @@
+/*-- scss:defaults --*/
+$font-family-sans-serif: 'Inter', sans-serif;
+$headings-font-weight: 700;
+
+/*-- scss:rules --*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.hero {
+  padding: 4rem 0 3rem;
+  text-align: center;
+  h1 { font-size: 2.8rem; font-weight: 700; margin-bottom: 1rem; }
+  p.lead { font-size: 1.2rem; opacity: 0.75; max-width: 600px; margin: 0 auto 2rem; }
+}
+
+.metric-card {
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}

@@ -1,0 +1,81 @@
+---
+title: ""
+page-layout: full
+toc: false
+---
+
+```{=html}
+<div class="hero">
+  <h1>📊 Mi Proyecto de Datos</h1>
+  <p class="lead">
+    Análisis interactivos de datos públicos chilenos.
+    Explora las secciones para ver los gráficos.
+  </p>
+  <a href="pages/educacion.qmd" class="btn btn-primary btn-lg me-2">Ver Educación</a>
+  <a href="pages/economia.qmd" class="btn btn-outline-secondary btn-lg">Ver Economía</a>
+</div>
+```
+
+## ¿Qué encontrarás aquí?
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-4}
+### 🎓 Educación
+Análisis del Crédito con Aval del Estado (CAE): morosidad por carrera, institución y región.
+[Ver análisis →](pages/educacion.qmd)
+:::
+
+::: {.g-col-12 .g-col-md-4}
+### 💰 Economía
+Indicadores macroeconómicos: deuda pública, PIB, empleo.
+[Ver análisis →](pages/economia.qmd)
+:::
+
+::: {.g-col-12 .g-col-md-4}
+### 📁 Datos
+Todos los datos usados son públicos y descargables.
+[Ver fuentes →](pages/datos.qmd)
+:::
+
+:::
+
+---
+
+```{python}
+#| label: resumen-portada
+#| fig-cap: "Ejemplo: datos simulados de morosidad CAE por tipo de institución"
+
+import plotly.express as px
+import pandas as pd
+import numpy as np
+
+np.random.seed(42)
+
+instituciones = ["U. Tradicional", "U. Privada", "IP", "CFT"]
+data = pd.DataFrame({
+    "Institución": np.repeat(instituciones, 30),
+    "Morosidad (%)": np.concatenate([
+        np.random.normal(28, 5, 30),
+        np.random.normal(45, 8, 30),
+        np.random.normal(52, 7, 30),
+        np.random.normal(58, 9, 30),
+    ]),
+})
+
+fig = px.box(
+    data,
+    x="Institución",
+    y="Morosidad (%)",
+    color="Institución",
+    color_discrete_sequence=px.colors.qualitative.Set2,
+    title="Distribución de morosidad CAE por tipo de institución",
+    template="plotly_white",
+)
+fig.update_layout(
+    showlegend=False,
+    font_family="Inter",
+    title_font_size=16,
+)
+fig.show()
+```
