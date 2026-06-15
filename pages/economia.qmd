@@ -1,6 +1,6 @@
 ---
 title: "Indicadores Económicos"
-subtitle: "Deuda pública, PIB y empleo en Chile"
+subtitle: "Crecimiento del PIB real en Chile"
 date: last-modified
 ---
 
@@ -11,70 +11,78 @@ date: last-modified
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-import numpy as np
-
-np.random.seed(7)
-
-años = list(range(2000, 2025))
-pib        = np.cumsum(np.random.normal(3, 1.5, len(años))) + 100
-deuda_pib  = np.clip(np.cumsum(np.random.normal(0.5, 1, len(años))) + 5, 3, 40)
-desempleo  = np.clip(np.random.normal(7, 1.5, len(años)), 4, 12)
 
 df = pd.DataFrame({
-    "año": años,
-    "pib_crecimiento": np.random.normal(3.5, 2, len(años)).round(1),
-    "deuda_pib": deuda_pib.round(1),
-    "desempleo": desempleo.round(1),
+    "año": [1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,
+            2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,
+            2017,2018,2019,2020,2021,2022,2023,2024,2025],
+    "pib": [7.39,4.18,-0.27,4.97,3.15,3.20,4.72,6.67,5.84,6.05,
+            5.17,3.79,-1.12,5.85,6.22,6.16,3.31,1.79,2.15,1.75,
+            1.36,3.99,0.64,-6.14,11.34,2.06,0.68,2.81,2.46],
 })
+
+df["color"] = df["pib"].apply(lambda x: "Positivo" if x >= 0 else "Negativo")
 ```
 
-::: {.callout-note}
-Datos simulados como ejemplo. Fuentes reales: [Banco Central](https://www.bcentral.cl),
-[INE](https://www.ine.gob.cl).
-:::
-
-## Crecimiento del PIB
+## Crecimiento del PIB real
 
 ```{python}
+#| label: pib-barras
+
 fig = px.bar(
-    df, x="año", y="pib_crecimiento",
-    color="pib_crecimiento",
-    color_continuous_scale="RdYlGn",
-    range_color=[-5, 8],
-    labels={"pib_crecimiento": "Crecimiento PIB (%)", "año": "Año"},
+    df,
+    x="año",
+    y="pib",
+    color="color",
+    color_discrete_map={"Positivo": "#2ecc71", "Negativo": "#e74c3c"},
+    labels={"pib": "Crecimiento PIB real (%)", "año": "Año", "color": ""},
+    text_auto=".2f",
     template="plotly_white",
 )
+fig.update_traces(textfont_size=9, textangle=0)
 fig.update_layout(
-    title="Crecimiento anual del PIB (%)",
+    title="Crecimiento anual del PIB real de Chile (1997–2025)",
     font_family="Inter",
-    coloraxis_showscale=False,
+    legend=dict(orientation="h", y=1.1),
+    yaxis=dict(zeroline=True, zerolinewidth=2, zerolinecolor="black"),
 )
 fig.show()
 ```
 
-## Deuda pública / PIB
+## Tendencia
 
 ```{python}
-fig = px.area(
-    df, x="año", y="deuda_pib",
-    labels={"deuda_pib": "Deuda / PIB (%)", "año": "Año"},
-    template="plotly_white",
-    color_discrete_sequence=["#e74c3c"],
-)
-fig.update_layout(title="Deuda pública como % del PIB", font_family="Inter")
-fig.show()
-```
+#| label: pib-linea
 
-## Desempleo
-
-```{python}
 fig = px.line(
-    df, x="año", y="desempleo",
+    df,
+    x="año",
+    y="pib",
     markers=True,
-    labels={"desempleo": "Tasa desempleo (%)", "año": "Año"},
+    labels={"pib": "Crecimiento PIB real (%)", "año": "Año"},
     template="plotly_white",
     color_discrete_sequence=["#2980b9"],
 )
-fig.update_layout(title="Tasa de desempleo anual (%)", font_family="Inter")
+fig.add_hline(y=0, line_dash="dash", line_color="red", opacity=0.5)
+fig.add_annotation(x=2020, y=-6.14, text="COVID-19", showarrow=True,
+                   arrowhead=2, ay=-40)
+fig.add_annotation(x=2021, y=11.34, text="Rebote", showarrow=True,
+                   arrowhead=2, ay=-40)
+fig.update_layout(
+    title="Tendencia del PIB real de Chile",
+    font_family="Inter",
+)
 fig.show()
 ```
+
+## Contexto histórico
+
+| Evento | Año | Crecimiento |
+|---|---|---|
+| Crisis asiática | 1999 | -0.27% |
+| Crisis financiera global | 2009 | -1.12% |
+| Estallido social | 2019 | 0.64% |
+| Pandemia COVID-19 | 2020 | -6.14% |
+| Rebote post-pandemia | 2021 | +11.34% |
+
+> Fuente: Banco Central de Chile
