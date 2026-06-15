@@ -1,0 +1,169 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Finanzas Públicas\"\n",
+        "subtitle: \"Deuda del Sector Público de Chile como % del PIB\"\n",
+        "date: last-modified\n",
+        "---"
+      ],
+      "id": "2cff856f"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| label: setup\n",
+        "#| include: false\n",
+        "\n",
+        "import pandas as pd\n",
+        "import plotly.express as px\n",
+        "import plotly.graph_objects as go\n",
+        "\n",
+        "df = pd.read_excel(\n",
+        "    \"../../data/finanzas_publicas.xlsx\",\n",
+        "    sheet_name=0,\n",
+        "    header=1,    # encabezado en fila 2 (índice 1)\n",
+        "    usecols=\"B:J\",  # columnas B hasta J\n",
+        ")\n",
+        "# Limpiar nombres de columnas\n",
+        "df.columns = [\n",
+        "    \"periodo\", \"deuda_bruta_gc\", \"deuda_neta_gc\",\n",
+        "    \"deuda_bruta_bc\", \"deuda_neta_bc\",\n",
+        "    \"deuda_bruta_sp\", \"deuda_neta_sp\",\n",
+        "    \"deuda_bruta_ep\", \"deuda_neta_ep\",\n",
+        "]\n",
+        "\n",
+        "# Convertir periodo a fecha\n",
+        "df[\"fecha\"] = pd.to_datetime(df[\"periodo\"], format=\"%b.%Y\", errors=\"coerce\")\n",
+        "df = df.dropna(subset=[\"fecha\"]).sort_values(\"fecha\")"
+      ],
+      "id": "setup",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Deuda bruta del Gobierno Central"
+      ],
+      "id": "db44ff9a"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "fig = px.line(\n",
+        "    df, x=\"fecha\", y=\"deuda_bruta_gc\",\n",
+        "    labels={\"fecha\": \"Período\", \"deuda_bruta_gc\": \"% del PIB\"},\n",
+        "    template=\"plotly_white\",\n",
+        "    color_discrete_sequence=[\"#2980b9\"],\n",
+        "    markers=False,\n",
+        ")\n",
+        "fig.update_layout(\n",
+        "    title=\"Deuda bruta del Gobierno Central (% del PIB)\",\n",
+        "    font_family=\"Inter\",\n",
+        ")\n",
+        "fig.show()"
+      ],
+      "id": "9900facb",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Deuda neta vs bruta — Sector Público Consolidado"
+      ],
+      "id": "83a08782"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "fig = go.Figure()\n",
+        "fig.add_trace(go.Scatter(\n",
+        "    x=df[\"fecha\"], y=df[\"deuda_bruta_sp\"],\n",
+        "    name=\"Deuda bruta\", line=dict(color=\"#e74c3c\"),\n",
+        "    fill=\"tozeroy\", fillcolor=\"rgba(231,76,60,0.1)\",\n",
+        "))\n",
+        "fig.add_trace(go.Scatter(\n",
+        "    x=df[\"fecha\"], y=df[\"deuda_neta_sp\"],\n",
+        "    name=\"Deuda neta\", line=dict(color=\"#2980b9\"),\n",
+        "))\n",
+        "fig.add_hline(y=0, line_dash=\"dash\", line_color=\"gray\", opacity=0.5)\n",
+        "fig.update_layout(\n",
+        "    title=\"Deuda bruta y neta — Sector Público Consolidado (% del PIB)\",\n",
+        "    yaxis_title=\"% del PIB\",\n",
+        "    xaxis_title=\"Período\",\n",
+        "    template=\"plotly_white\",\n",
+        "    font_family=\"Inter\",\n",
+        "    legend=dict(orientation=\"h\", y=1.1),\n",
+        ")\n",
+        "fig.show()"
+      ],
+      "id": "09b87b2c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Comparación por componente"
+      ],
+      "id": "4f915bcd"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "fig = px.line(\n",
+        "    df,\n",
+        "    x=\"fecha\",\n",
+        "    y=[\"deuda_bruta_gc\", \"deuda_bruta_bc\", \"deuda_bruta_ep\"],\n",
+        "    labels={\n",
+        "        \"fecha\": \"Período\",\n",
+        "        \"value\": \"% del PIB\",\n",
+        "        \"variable\": \"Componente\",\n",
+        "    },\n",
+        "    color_discrete_map={\n",
+        "        \"deuda_bruta_gc\": \"#2980b9\",\n",
+        "        \"deuda_bruta_bc\": \"#e74c3c\",\n",
+        "        \"deuda_bruta_ep\": \"#27ae60\",\n",
+        "    },\n",
+        "    template=\"plotly_white\",\n",
+        ")\n",
+        "fig.for_each_trace(lambda t: t.update(name={\n",
+        "    \"deuda_bruta_gc\": \"Gobierno Central\",\n",
+        "    \"deuda_bruta_bc\": \"Banco Central\",\n",
+        "    \"deuda_bruta_ep\": \"Empresas Públicas\",\n",
+        "}[t.name]))\n",
+        "fig.update_layout(\n",
+        "    title=\"Deuda bruta por componente (% del PIB)\",\n",
+        "    font_family=\"Inter\",\n",
+        "    legend=dict(orientation=\"h\", y=1.1),\n",
+        ")\n",
+        "fig.show()"
+      ],
+      "id": "a39f0d69",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "C:\\Users\\juanm\\AppData\\Local\\Programs\\Python\\Python314\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

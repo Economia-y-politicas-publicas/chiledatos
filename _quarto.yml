@@ -3,7 +3,7 @@ project:
   output-dir: _site
 
 website:
-  title: "Mi Proyecto de Datos"
+  title: "Datos Chile"
   description: "Análisis de datos públicos chilenos"
   favicon: assets/favicon.ico
 
@@ -11,12 +11,14 @@ website:
     background: dark
     foreground: light
     left:
-      - href: index.qmd
-        text: Inicio
-      - href: pages/educacion.qmd
-        text: Educación
-      - href: pages/economia.qmd
-        text: Economía
+          - href: index.qmd
+            text: Inicio
+          - href: pages/educacion.qmd
+            text: Educación
+          - href: pages/economia.qmd
+            text: Economía
+          - href: pages/finanzas.qmd
+            text: Finanzas Públicas
     right:
       - icon: github
         href: https://github.com/tuusuario/mi-proyecto

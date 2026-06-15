@@ -1,0 +1,106 @@
+---
+title: "Finanzas Públicas"
+subtitle: "Deuda del Sector Público de Chile como % del PIB"
+date: last-modified
+---
+
+```{python}
+#| label: setup
+#| include: false
+
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+
+df = pd.read_excel(
+    "../../data/finanzas_publicas.xlsx",
+    sheet_name=0,
+    header=1,    # encabezado en fila 2 (índice 1)
+    usecols="B:J",  # columnas B hasta J
+)
+# Limpiar nombres de columnas
+df.columns = [
+    "periodo", "deuda_bruta_gc", "deuda_neta_gc",
+    "deuda_bruta_bc", "deuda_neta_bc",
+    "deuda_bruta_sp", "deuda_neta_sp",
+    "deuda_bruta_ep", "deuda_neta_ep",
+]
+
+# Convertir periodo a fecha
+df["fecha"] = pd.to_datetime(df["periodo"], format="%b.%Y", errors="coerce")
+df = df.dropna(subset=["fecha"]).sort_values("fecha")
+```
+
+## Deuda bruta del Gobierno Central
+
+```{python}
+fig = px.line(
+    df, x="fecha", y="deuda_bruta_gc",
+    labels={"fecha": "Período", "deuda_bruta_gc": "% del PIB"},
+    template="plotly_white",
+    color_discrete_sequence=["#2980b9"],
+    markers=False,
+)
+fig.update_layout(
+    title="Deuda bruta del Gobierno Central (% del PIB)",
+    font_family="Inter",
+)
+fig.show()
+```
+
+## Deuda neta vs bruta — Sector Público Consolidado
+
+```{python}
+fig = go.Figure()
+fig.add_trace(go.Scatter(
+    x=df["fecha"], y=df["deuda_bruta_sp"],
+    name="Deuda bruta", line=dict(color="#e74c3c"),
+    fill="tozeroy", fillcolor="rgba(231,76,60,0.1)",
+))
+fig.add_trace(go.Scatter(
+    x=df["fecha"], y=df["deuda_neta_sp"],
+    name="Deuda neta", line=dict(color="#2980b9"),
+))
+fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+fig.update_layout(
+    title="Deuda bruta y neta — Sector Público Consolidado (% del PIB)",
+    yaxis_title="% del PIB",
+    xaxis_title="Período",
+    template="plotly_white",
+    font_family="Inter",
+    legend=dict(orientation="h", y=1.1),
+)
+fig.show()
+```
+
+## Comparación por componente
+
+```{python}
+fig = px.line(
+    df,
+    x="fecha",
+    y=["deuda_bruta_gc", "deuda_bruta_bc", "deuda_bruta_ep"],
+    labels={
+        "fecha": "Período",
+        "value": "% del PIB",
+        "variable": "Componente",
+    },
+    color_discrete_map={
+        "deuda_bruta_gc": "#2980b9",
+        "deuda_bruta_bc": "#e74c3c",
+        "deuda_bruta_ep": "#27ae60",
+    },
+    template="plotly_white",
+)
+fig.for_each_trace(lambda t: t.update(name={
+    "deuda_bruta_gc": "Gobierno Central",
+    "deuda_bruta_bc": "Banco Central",
+    "deuda_bruta_ep": "Empresas Públicas",
+}[t.name]))
+fig.update_layout(
+    title="Deuda bruta por componente (% del PIB)",
+    font_family="Inter",
+    legend=dict(orientation="h", y=1.1),
+)
+fig.show()
+```
