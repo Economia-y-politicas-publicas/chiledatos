@@ -6,7 +6,7 @@ date: last-modified
 
 ```{python}
 #| label: setup
-#| include: false
+#| include: true
 
 import pandas as pd
 import matplotlib.pyplot as plt
