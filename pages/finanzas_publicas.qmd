@@ -22,7 +22,7 @@ df.columns = [
     "deuda_bruta_sp", "deuda_neta_sp",
     "deuda_bruta_ep", "deuda_neta_ep",
 ]
-
+df[cols_numericas] = df[cols_numericas].apply(pd.to_numeric, errors="coerce")
 df["fecha"] = pd.to_datetime(df["periodo"], format="%b.%Y", errors="coerce")
 df = df.dropna(subset=["fecha"]).sort_values("fecha")
 ```
