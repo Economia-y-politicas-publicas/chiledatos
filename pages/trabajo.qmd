@@ -4,6 +4,10 @@ subtitle: "Empleo y desempleo en Chile"
 date: last-modified
 ---
 
+## Contexto
+
+El mercado laboral es uno de los indicadores más importantes del bienestar económico de un país. En Chile, el **Instituto Nacional de Estadísticas (INE)** publica mensualmente la **Encuesta Nacional de Empleo (ENE)**, que mide el estado laboral de la población a través de períodos móviles de tres meses.
+
 ```{python}
 #| label: setup
 #| include: false
@@ -41,14 +45,22 @@ def agregar_autor(fig):
     return fig
 
 eje_x = dict(
-    dtick="M3",
+    dtick="M6",
     tickformat="%b %Y",
     tickangle=45,
     tickfont=dict(size=10),
 )
 ```
 
+---
+
 ## 1. Tasa de desempleo total
+
+La **tasa de desempleo** mide la proporción de personas que buscan trabajo activamente sobre el total de la fuerza laboral:
+
+$$TD = \frac{\text{Desempleados}}{\text{Ocupados} + \text{Desempleados}} \times 100$$
+
+En Chile la tasa de desempleo ha oscilado históricamente entre 5% y 10%, con dos grandes shocks visibles en la serie: la **crisis financiera global de 2009** y la **pandemia COVID-19 de 2020**, que llevó la tasa a un máximo histórico de 13,1% en el trimestre mayo-julio de 2020.
 
 ```{python}
 fig = px.line(
@@ -69,7 +81,13 @@ agregar_autor(fig)
 fig.show()
 ```
 
+---
+
 ## 2. Desempleo por sexo
+
+La tasa de desempleo no afecta de igual forma a hombres y mujeres. Históricamente, las **mujeres presentan tasas de desempleo más altas** que los hombres en Chile, lo que refleja barreras estructurales de acceso al mercado laboral: menor participación laboral femenina, trabajo no remunerado del hogar y brechas salariales.
+
+Durante la pandemia de 2020, el desempleo masculino superó al femenino temporalmente — fenómeno explicado por la mayor presencia de hombres en sectores golpeados por las restricciones sanitarias (construcción, comercio, transporte).
 
 ```{python}
 fig = go.Figure()
@@ -100,7 +118,15 @@ agregar_autor(fig)
 fig.show()
 ```
 
+---
+
 ## 3. Brecha de desempleo mujer − hombre
+
+La **brecha de desempleo** se define como la diferencia en puntos porcentuales entre la tasa de desempleo femenina y masculina:
+
+$$\text{Brecha} = TD_{\text{Mujer}} - TD_{\text{Hombre}}$$
+
+Cuando la brecha es positiva, las mujeres enfrentan mayor desempleo que los hombres. Una brecha persistentemente positiva es señal de desigualdad estructural en el mercado laboral. Durante 2020-2021, la brecha se redujo e incluso se volvió negativa momentáneamente, debido al impacto diferenciado de la pandemia por sector económico.
 
 ```{python}
 fig = px.area(
@@ -122,7 +148,13 @@ agregar_autor(fig)
 fig.show()
 ```
 
+---
+
 ## 4. Duración promedio del desempleo
+
+La **duración promedio del desempleo** mide cuántos meses tarda en promedio una persona desempleada en encontrar trabajo. Es un indicador complementario a la tasa de desempleo: una economía puede tener baja tasa de desempleo pero alta duración, lo que indica dificultades estructurales de reinserción laboral.
+
+El peak de 2021 refleja el efecto prolongado de la pandemia: muchas personas permanecieron desempleadas por más tiempo incluso cuando la tasa global comenzaba a bajar.
 
 ```{python}
 #| echo: false
