@@ -21,16 +21,14 @@ website:
       - icon: github
         href: https://github.com/Economia-y-politicas-publicas/chiledatos
   page-footer:
-    left: "© 2025 Economía y Políticas Públicas · Datos públicos de Chile"
+    left: "© 2026 Economía y Políticas Públicas · Datos públicos de Chile"
     right:
       - icon: github
         href: https://github.com/Economia-y-politicas-publicas/chiledatos
 
 format:
   html:
-    theme:
-      light: [flatly, styles/custom.scss]
-      dark:  [darkly, styles/custom.scss]
+    theme: [darkly, styles/custom.scss]
     toc: true
     toc-depth: 3
     toc-title: "En esta página"
