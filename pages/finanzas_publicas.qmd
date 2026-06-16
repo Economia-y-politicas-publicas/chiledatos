@@ -25,6 +25,7 @@ df.columns = [
 
 df["fecha"] = pd.to_datetime(df["periodo"], format="%b.%Y", errors="coerce")
 df = df.dropna(subset=["fecha"]).sort_values("fecha")
+```
 
 ## Deuda bruta del Gobierno Central
 
