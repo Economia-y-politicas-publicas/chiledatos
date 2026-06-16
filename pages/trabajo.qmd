@@ -6,11 +6,11 @@ date: last-modified
 
 ```{python}
 #| label: setup
-#| include: true
+#| include: false
 
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
+import plotly.express as px
+import plotly.graph_objects as go
 
 url = "https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/trabajo.csv"
 
@@ -21,90 +21,111 @@ dt = dt.rename(columns={
 })
 dt[["año","mes","total","hombre","mujer"]] = dt[["año","mes","total","hombre","mujer"]].apply(pd.to_numeric, errors="coerce")
 dt = dt.dropna(subset=["año","mes","total"])
-dt = dt[(dt["año"] >= 2010) & (dt["año"] <= 2030)]  # filtro de seguridad
+dt = dt[(dt["año"] >= 2010) & (dt["año"] <= 2030)]
 dt["fecha"] = pd.to_datetime(dict(year=dt["año"], month=dt["mes"], day=1))
 dt = dt.sort_values("fecha").reset_index(drop=True)
 dt["brecha"] = dt["mujer"] - dt["hombre"]
 
-
-print(dt[["periodo","año","mes","fecha"]].head(20))
-print(dt[["periodo","año","mes","fecha"]].tail(20))
-print(f"Rango de fechas: {dt['fecha'].min()} a {dt['fecha'].max()}")
-
 AUTOR = "Autor: Juan Miguieles Onetto | Fuente: INE"
+NOTA = "Nota: La tasa de desempleo se mide trimestralmente mediante la ENE."
 
-plt.rcParams.update({
-    "font.family": "sans-serif",
-    "axes.spines.top": False,
-    "axes.spines.right": False,
-    "figure.dpi": 120,
-})
+def agregar_autor(fig):
+    fig.update_layout(
+        annotations=[
+            dict(text=AUTOR, x=0, y=-0.18, xref="paper", yref="paper",
+                 showarrow=False, font=dict(size=10, color="gray"), xanchor="left"),
+            dict(text=NOTA, x=0, y=-0.24, xref="paper", yref="paper",
+                 showarrow=False, font=dict(size=9, color="#aaaaaa"), xanchor="left"),
+        ]
+    )
+    return fig
+
+eje_x = dict(
+    dtick="M3",
+    tickformat="%b %Y",
+    tickangle=45,
+    tickfont=dict(size=10),
+)
 ```
 
 ## 1. Tasa de desempleo total
 
 ```{python}
-#| fig-cap: "Tasa de desempleo total en Chile (%)"
-
-fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(dt["fecha"], dt["total"], color="#f39c12", linewidth=2)
-ax.set_title("Tasa de desempleo total en Chile (%)", fontsize=14, fontweight="bold", pad=12)
-ax.set_xlabel("Año")
-ax.set_ylabel("Tasa de desempleo (%)")
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.1f"))
-ax.xaxis.set_major_locator(ticker.MaxNLocator(10))
-fig.autofmt_xdate(rotation=0, ha="center")
-fig.text(0, -0.05, AUTOR, fontsize=9, color="gray", transform=ax.transAxes)
-fig.text(0, -0.08, AUTOR, fontsize=9, color="gray", transform=ax.transAxes)
-fig.text(0, -0.14, "Nota: La tasa de desempleo se mide trimestralmente mediante la ENE.", 
-         fontsize=9, color="#aaaaaa", transform=ax.transAxes, style="italic")
-plt.tight_layout()
-plt.show()
+fig = px.line(
+    dt, x="fecha", y="total",
+    labels={"total": "Tasa de desempleo (%)", "fecha": ""},
+    template="plotly_white",
+    color_discrete_sequence=["#f39c12"],
+)
+fig.update_layout(
+    title=dict(text="Tasa de desempleo total en Chile (%)", font=dict(size=16)),
+    font_family="Inter",
+    xaxis=eje_x,
+    yaxis=dict(tickformat=".1f"),
+    margin=dict(b=120),
+    height=450,
+)
+agregar_autor(fig)
+fig.show()
 ```
 
 ## 2. Desempleo por sexo
 
 ```{python}
-#| fig-cap: "Tasa de desempleo por sexo (%)"
-
-fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(dt["fecha"], dt["total"],  color="#f39c12", linewidth=2, label="Total")
-ax.plot(dt["fecha"], dt["hombre"], color="#2980b9", linewidth=2, label="Hombre")
-ax.plot(dt["fecha"], dt["mujer"],  color="#e74c3c", linewidth=2, label="Mujer")
-ax.set_title("Tasa de desempleo por sexo (%)", fontsize=14, fontweight="bold", pad=12)
-ax.set_xlabel("Año")
-ax.set_ylabel("Tasa de desempleo (%)")
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.1f"))
-ax.xaxis.set_major_locator(ticker.MaxNLocator(10))
-ax.legend(loc="upper right", frameon=False)
-fig.autofmt_xdate(rotation=0, ha="center")
-fig.text(0, -0.05, AUTOR, fontsize=9, color="gray", transform=ax.transAxes)
-fig.text(0, -0.08, AUTOR, fontsize=9, color="gray", transform=ax.transAxes)
-fig.text(0, -0.14, "Nota: La tasa de desempleo se mide trimestralmente mediante la ENE.", 
-         fontsize=9, color="#aaaaaa", transform=ax.transAxes, style="italic")
-plt.tight_layout()
-plt.show()
+fig = go.Figure()
+fig.add_trace(go.Scatter(
+    x=dt["fecha"], y=dt["total"],
+    name="Total", line=dict(color="#f39c12", width=2),
+))
+fig.add_trace(go.Scatter(
+    x=dt["fecha"], y=dt["hombre"],
+    name="Hombre", line=dict(color="#2980b9", width=2),
+))
+fig.add_trace(go.Scatter(
+    x=dt["fecha"], y=dt["mujer"],
+    name="Mujer", line=dict(color="#e74c3c", width=2),
+))
+fig.update_layout(
+    title=dict(text="Tasa de desempleo por sexo (%)", font=dict(size=16)),
+    yaxis_title="Tasa de desempleo (%)",
+    xaxis=eje_x,
+    template="plotly_white",
+    font_family="Inter",
+    legend=dict(orientation="h", y=-0.3, x=0.5, xanchor="center"),
+    yaxis=dict(tickformat=".1f"),
+    margin=dict(b=130),
+    height=450,
+)
+agregar_autor(fig)
+fig.show()
 ```
 
 ## 3. Brecha de desempleo mujer − hombre
 
 ```{python}
-#| fig-cap: "Brecha de desempleo mujer − hombre (puntos porcentuales)"
+fig = px.area(
+    dt, x="fecha", y="brecha",
+    labels={"brecha": "Brecha (pp)", "fecha": ""},
+    template="plotly_white",
+    color_discrete_sequence=["#8e44ad"],
+)
+fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+fig.update_layout(
+    title=dict(text="Brecha de desempleo mujer − hombre (puntos porcentuales)", font=dict(size=16)),
+    font_family="Inter",
+    xaxis=eje_x,
+    yaxis=dict(tickformat=".1f"),
+    margin=dict(b=120),
+    height=450,
+)
+agregar_autor(fig)
+fig.show()
+```
 
-fig, ax = plt.subplots(figsize=(10, 4))
-ax.fill_between(dt["fecha"], dt["brecha"], color="#8e44ad", alpha=0.4)
-ax.plot(dt["fecha"], dt["brecha"], color="#8e44ad", linewidth=1.5)
-ax.axhline(0, color="gray", linestyle="--", linewidth=0.8)
-ax.set_title("Brecha de desempleo mujer − hombre (pp)", fontsize=14, fontweight="bold", pad=12)
-ax.set_xlabel("Año")
-ax.set_ylabel("Puntos porcentuales")
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.1f"))
-ax.xaxis.set_major_locator(ticker.MaxNLocator(10))
-fig.autofmt_xdate(rotation=0, ha="center")
-fig.text(0, -0.05, AUTOR, fontsize=9, color="gray", transform=ax.transAxes)
-fig.text(0, -0.08, AUTOR, fontsize=9, color="gray", transform=ax.transAxes)
-fig.text(0, -0.14, "Nota: La tasa de desempleo se mide trimestralmente mediante la ENE.", 
-         fontsize=9, color="#aaaaaa", transform=ax.transAxes, style="italic")
-plt.tight_layout()
-plt.show()
+## 4. Duración promedio del desempleo
+
+```{python}
+#| echo: false
+from IPython.display import Image
+Image("../imagenes/trabajo/linkedin.png", width=800)
 ```

@@ -1,0 +1,173 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Mercado Laboral\"\n",
+        "subtitle: \"Empleo y desempleo en Chile\"\n",
+        "date: last-modified\n",
+        "---"
+      ],
+      "id": "fcb1c475"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| label: setup\n",
+        "#| include: true\n",
+        "\n",
+        "import pandas as pd\n",
+        "import matplotlib.pyplot as plt\n",
+        "import matplotlib.ticker as ticker\n",
+        "\n",
+        "url = \"https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/trabajo.csv\"\n",
+        "\n",
+        "dt = pd.read_csv(url, sep=\",\", encoding=\"utf-8\")\n",
+        "dt = dt.rename(columns={\n",
+        "    \"Tiempo\": \"periodo\", \"Año\": \"año\", \"Mes\": \"mes\",\n",
+        "    \"Total\": \"total\", \"Hombre\": \"hombre\", \"Mujer\": \"mujer\"\n",
+        "})\n",
+        "dt[[\"año\",\"mes\",\"total\",\"hombre\",\"mujer\"]] = dt[[\"año\",\"mes\",\"total\",\"hombre\",\"mujer\"]].apply(pd.to_numeric, errors=\"coerce\")\n",
+        "dt = dt.dropna(subset=[\"año\",\"mes\",\"total\"])\n",
+        "dt = dt[(dt[\"año\"] >= 2010) & (dt[\"año\"] <= 2030)]  # filtro de seguridad\n",
+        "dt[\"fecha\"] = pd.to_datetime(dict(year=dt[\"año\"], month=dt[\"mes\"], day=1))\n",
+        "dt = dt.sort_values(\"fecha\").reset_index(drop=True)\n",
+        "dt[\"brecha\"] = dt[\"mujer\"] - dt[\"hombre\"]\n",
+        "\n",
+        "\n",
+        "print(dt[[\"periodo\",\"año\",\"mes\",\"fecha\"]].head(20))\n",
+        "print(dt[[\"periodo\",\"año\",\"mes\",\"fecha\"]].tail(20))\n",
+        "print(f\"Rango de fechas: {dt['fecha'].min()} a {dt['fecha'].max()}\")\n",
+        "\n",
+        "AUTOR = \"Autor: Juan Miguieles Onetto | Fuente: INE\"\n",
+        "\n",
+        "plt.rcParams.update({\n",
+        "    \"font.family\": \"sans-serif\",\n",
+        "    \"axes.spines.top\": False,\n",
+        "    \"axes.spines.right\": False,\n",
+        "    \"figure.dpi\": 120,\n",
+        "})"
+      ],
+      "id": "setup",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 1. Tasa de desempleo total"
+      ],
+      "id": "ed7e507c"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| fig-cap: \"Tasa de desempleo total en Chile (%)\"\n",
+        "\n",
+        "fig, ax = plt.subplots(figsize=(10, 4))\n",
+        "ax.plot(dt[\"fecha\"], dt[\"total\"], color=\"#f39c12\", linewidth=2)\n",
+        "ax.set_title(\"Tasa de desempleo total en Chile (%)\", fontsize=14, fontweight=\"bold\", pad=12)\n",
+        "ax.set_xlabel(\"Año\")\n",
+        "ax.set_ylabel(\"Tasa de desempleo (%)\")\n",
+        "ax.yaxis.set_major_formatter(ticker.FormatStrFormatter(\"%.1f\"))\n",
+        "ax.xaxis.set_major_locator(ticker.MaxNLocator(10))\n",
+        "fig.autofmt_xdate(rotation=0, ha=\"center\")\n",
+        "fig.text(0, -0.05, AUTOR, fontsize=9, color=\"gray\", transform=ax.transAxes)\n",
+        "fig.text(0, -0.08, AUTOR, fontsize=9, color=\"gray\", transform=ax.transAxes)\n",
+        "fig.text(0, -0.14, \"Nota: La tasa de desempleo se mide trimestralmente mediante la ENE.\", \n",
+        "         fontsize=9, color=\"#aaaaaa\", transform=ax.transAxes, style=\"italic\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "c96a16b6",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 2. Desempleo por sexo"
+      ],
+      "id": "3257f58b"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| fig-cap: \"Tasa de desempleo por sexo (%)\"\n",
+        "\n",
+        "fig, ax = plt.subplots(figsize=(10, 4))\n",
+        "ax.plot(dt[\"fecha\"], dt[\"total\"],  color=\"#f39c12\", linewidth=2, label=\"Total\")\n",
+        "ax.plot(dt[\"fecha\"], dt[\"hombre\"], color=\"#2980b9\", linewidth=2, label=\"Hombre\")\n",
+        "ax.plot(dt[\"fecha\"], dt[\"mujer\"],  color=\"#e74c3c\", linewidth=2, label=\"Mujer\")\n",
+        "ax.set_title(\"Tasa de desempleo por sexo (%)\", fontsize=14, fontweight=\"bold\", pad=12)\n",
+        "ax.set_xlabel(\"Año\")\n",
+        "ax.set_ylabel(\"Tasa de desempleo (%)\")\n",
+        "ax.yaxis.set_major_formatter(ticker.FormatStrFormatter(\"%.1f\"))\n",
+        "ax.xaxis.set_major_locator(ticker.MaxNLocator(10))\n",
+        "ax.legend(loc=\"upper right\", frameon=False)\n",
+        "fig.autofmt_xdate(rotation=0, ha=\"center\")\n",
+        "fig.text(0, -0.05, AUTOR, fontsize=9, color=\"gray\", transform=ax.transAxes)\n",
+        "fig.text(0, -0.08, AUTOR, fontsize=9, color=\"gray\", transform=ax.transAxes)\n",
+        "fig.text(0, -0.14, \"Nota: La tasa de desempleo se mide trimestralmente mediante la ENE.\", \n",
+        "         fontsize=9, color=\"#aaaaaa\", transform=ax.transAxes, style=\"italic\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "b45f313d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 3. Brecha de desempleo mujer − hombre"
+      ],
+      "id": "cb6e64aa"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| fig-cap: \"Brecha de desempleo mujer − hombre (puntos porcentuales)\"\n",
+        "\n",
+        "fig, ax = plt.subplots(figsize=(10, 4))\n",
+        "ax.fill_between(dt[\"fecha\"], dt[\"brecha\"], color=\"#8e44ad\", alpha=0.4)\n",
+        "ax.plot(dt[\"fecha\"], dt[\"brecha\"], color=\"#8e44ad\", linewidth=1.5)\n",
+        "ax.axhline(0, color=\"gray\", linestyle=\"--\", linewidth=0.8)\n",
+        "ax.set_title(\"Brecha de desempleo mujer − hombre (pp)\", fontsize=14, fontweight=\"bold\", pad=12)\n",
+        "ax.set_xlabel(\"Año\")\n",
+        "ax.set_ylabel(\"Puntos porcentuales\")\n",
+        "ax.yaxis.set_major_formatter(ticker.FormatStrFormatter(\"%.1f\"))\n",
+        "ax.xaxis.set_major_locator(ticker.MaxNLocator(10))\n",
+        "fig.autofmt_xdate(rotation=0, ha=\"center\")\n",
+        "fig.text(0, -0.05, AUTOR, fontsize=9, color=\"gray\", transform=ax.transAxes)\n",
+        "fig.text(0, -0.08, AUTOR, fontsize=9, color=\"gray\", transform=ax.transAxes)\n",
+        "fig.text(0, -0.14, \"Nota: La tasa de desempleo se mide trimestralmente mediante la ENE.\", \n",
+        "         fontsize=9, color=\"#aaaaaa\", transform=ax.transAxes, style=\"italic\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "41f5570c",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "C:\\Users\\juanm\\AppData\\Local\\Programs\\Python\\Python314\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
