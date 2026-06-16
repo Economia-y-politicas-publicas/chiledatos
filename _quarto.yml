@@ -17,6 +17,8 @@ website:
         text: Economía
       - href: pages/finanzas_publicas.qmd
         text: Finanzas Públicas
+      - href: pages/trabajo.qmd
+        text: Mercado Laboral  
     right:
       - icon: github
         href: https://github.com/Economia-y-politicas-publicas/chiledatos
