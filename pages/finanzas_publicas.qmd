@@ -74,7 +74,7 @@ fig.update_layout(
     template="plotly_white",
     font_family="Inter",
     yaxis=dict(tickformat=".1f"),
-    legend=dict(orientation="h", y=1.1),
+    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
 )
 fig.show()
 ```
@@ -107,7 +107,7 @@ fig.update_layout(
     title="Deuda bruta por componente (% del PIB)",
     font_family="Inter",
     yaxis=dict(tickformat=".1f"),
-    legend=dict(orientation="h", y=1.1),
+    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
 )
 fig.show()
 ```
