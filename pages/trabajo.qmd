@@ -14,8 +14,16 @@ import plotly.graph_objects as go
 
 url = "https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/trabajo.csv"
 
-dt = pd.read_csv(url, sep="\t", encoding="utf-8")
-dt.columns = ["periodo", "año", "mes", "total", "hombre", "mujer"]
+dt = pd.read_csv(url, sep=",", encoding="utf-8")
+# Usar nombres del CSV directamente
+dt = dt.rename(columns={
+    "Tiempo": "periodo",
+    "Año": "año", 
+    "Mes": "mes",
+    "Total": "total",
+    "Hombre": "hombre",
+    "Mujer": "mujer"
+})
 dt[["año","mes","total","hombre","mujer"]] = dt[["año","mes","total","hombre","mujer"]].apply(pd.to_numeric, errors="coerce")
 dt = dt.dropna(subset=["año","mes","total"])
 dt["fecha"] = pd.to_datetime(dict(year=dt["año"], month=dt["mes"], day=1))
