@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 
 url = "https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/finanzas_publicas.csv"
 
-df = pd.read_csv(url, sep=";", encoding="latin-1")
+df = pd.read_csv(url, sep="\t", encoding="latin-1", decimal=",")
 
 df.columns = [
     "periodo", "deuda_bruta_gc", "deuda_neta_gc",
@@ -22,7 +22,15 @@ df.columns = [
     "deuda_bruta_sp", "deuda_neta_sp",
     "deuda_bruta_ep", "deuda_neta_ep",
 ]
+
+cols_numericas = [
+    "deuda_bruta_gc", "deuda_neta_gc",
+    "deuda_bruta_bc", "deuda_neta_bc",
+    "deuda_bruta_sp", "deuda_neta_sp",
+    "deuda_bruta_ep", "deuda_neta_ep",
+]
 df[cols_numericas] = df[cols_numericas].apply(pd.to_numeric, errors="coerce")
+
 df["fecha"] = pd.to_datetime(df["periodo"], format="%b.%Y", errors="coerce")
 df = df.dropna(subset=["fecha"]).sort_values("fecha")
 ```
@@ -40,6 +48,7 @@ fig = px.line(
 fig.update_layout(
     title="Deuda bruta del Gobierno Central (% del PIB)",
     font_family="Inter",
+    yaxis=dict(tickformat=".1f"),
 )
 fig.show()
 ```
@@ -64,6 +73,7 @@ fig.update_layout(
     xaxis_title="Período",
     template="plotly_white",
     font_family="Inter",
+    yaxis=dict(tickformat=".1f"),
     legend=dict(orientation="h", y=1.1),
 )
 fig.show()
@@ -96,6 +106,7 @@ fig.for_each_trace(lambda t: t.update(name={
 fig.update_layout(
     title="Deuda bruta por componente (% del PIB)",
     font_family="Inter",
+    yaxis=dict(tickformat=".1f"),
     legend=dict(orientation="h", y=1.1),
 )
 fig.show()
