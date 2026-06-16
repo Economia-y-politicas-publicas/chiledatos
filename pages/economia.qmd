@@ -20,8 +20,22 @@ df = pd.DataFrame({
             5.17,3.79,-1.12,5.85,6.22,6.16,3.31,1.79,2.15,1.75,
             1.36,3.99,0.64,-6.14,11.34,2.06,0.68,2.81,2.46],
 })
-
 df["color"] = df["pib"].apply(lambda x: "Positivo" if x >= 0 else "Negativo")
+
+AUTOR = "Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile"
+
+def agregar_autor(fig):
+    fig.update_layout(
+        annotations=[dict(
+            text=AUTOR,
+            x=0, y=-0.15,
+            xref="paper", yref="paper",
+            showarrow=False,
+            font=dict(size=11, color="gray"),
+            xanchor="left",
+        )]
+    )
+    return fig
 ```
 
 ## Crecimiento del PIB real
@@ -39,13 +53,16 @@ fig = px.bar(
     text_auto=".2f",
     template="plotly_white",
 )
-fig.update_traces(textfont_size=9, textangle=0)
+fig.update_traces(textfont_size=11, textangle=0)
 fig.update_layout(
-    title="Crecimiento anual del PIB real de Chile (1997–2025)",
-    font_family="Inter",
-    legend=dict(orientation="h", y=1.1),
-    yaxis=dict(zeroline=True, zerolinewidth=2, zerolinecolor="black"),
+    title=dict(text="Crecimiento anual del PIB real de Chile (1997–2025)", font=dict(size=18)),
+    font=dict(family="Inter", size=14),
+    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+    yaxis=dict(zeroline=True, zerolinewidth=2, zerolinecolor="black", tickfont=dict(size=13)),
+    xaxis=dict(tickfont=dict(size=13)),
+    margin=dict(b=80),
 )
+agregar_autor(fig)
 fig.show()
 ```
 
@@ -65,13 +82,17 @@ fig = px.line(
 )
 fig.add_hline(y=0, line_dash="dash", line_color="red", opacity=0.5)
 fig.add_annotation(x=2020, y=-6.14, text="COVID-19", showarrow=True,
-                   arrowhead=2, ay=-40)
+                   arrowhead=2, ay=-40, font=dict(size=13))
 fig.add_annotation(x=2021, y=11.34, text="Rebote", showarrow=True,
-                   arrowhead=2, ay=-40)
+                   arrowhead=2, ay=-40, font=dict(size=13))
 fig.update_layout(
-    title="Tendencia del PIB real de Chile",
-    font_family="Inter",
+    title=dict(text="Tendencia del PIB real de Chile", font=dict(size=18)),
+    font=dict(family="Inter", size=14),
+    yaxis=dict(tickfont=dict(size=13)),
+    xaxis=dict(tickfont=dict(size=13)),
+    margin=dict(b=80),
 )
+agregar_autor(fig)
 fig.show()
 ```
 
@@ -84,5 +105,3 @@ fig.show()
 | Estallido social | 2019 | 0.64% |
 | Pandemia COVID-19 | 2020 | -6.14% |
 | Rebote post-pandemia | 2021 | +11.34% |
-
-> Fuente: Banco Central de Chile
