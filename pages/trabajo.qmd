@@ -227,7 +227,7 @@ fig.update_layout(
         type="buttons",
         showactive=False,
         x=1.0,
-        y=-0.15,
+        y=-0.55,
         xanchor="right",
         yanchor="top",
         buttons=[
@@ -251,9 +251,9 @@ fig.update_layout(
 # Notas más abajo
 fig.update_layout(
     annotations=[
-        dict(text=AUTOR, x=0, y=-0.35, xref="paper", yref="paper",
+        dict(text=AUTOR, x=0, y=-5.35, xref="paper", yref="paper",
              showarrow=False, font=dict(size=10, color="gray"), xanchor="left"),
-        dict(text=NOTA, x=0, y=-0.42, xref="paper", yref="paper",
+        dict(text=NOTA, x=0, y=-5.42, xref="paper", yref="paper",
              showarrow=False, font=dict(size=9, color="#aaaaaa"), xanchor="left"),
     ]
 )
