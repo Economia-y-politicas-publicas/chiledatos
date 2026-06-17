@@ -17,7 +17,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # En lugar de la URL, pon la ruta de tu archivo:
-dt = pd.read_csv("C:/Users/juanm/Desktop/manim/quarto-template/datadata/trabajo.csv", sep=",", encoding="utf-8")
+# Esta ruta funciona en tu PC y en el servidor de GitHub
+dt = pd.read_csv("../data/trabajo.csv", sep=",", encoding="utf-8")
 dt = dt.rename(columns={
     "Tiempo": "periodo", "Año": "año", "Mes": "mes",
     "Total": "total", "Hombre": "hombre", "Mujer": "mujer"
