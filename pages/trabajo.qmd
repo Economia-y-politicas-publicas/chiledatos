@@ -164,17 +164,17 @@ Image("../imagenes/trabajo/linkedin.png", width=800)
 
 ---
 
-# Identificar las columnas de las regiones (usamos "Regi" para evitar problemas si viene sin tilde)
+# 1. Identificar las columnas de las regiones (usamos "Regi" para evitar problemas si viene sin tilde)
 columnas_regiones = [col for col in dt.columns if "Regi" in col]
 
-# Asegurar que las columnas regionales sean numéricas (reemplaza comas si existieran)
+# 2. Asegurar que las columnas regionales sean numéricas (reemplaza comas si existieran)
 for col in columnas_regiones:
     dt[col] = dt[col].astype(str).str.replace(',', '.')
     dt[col] = pd.to_numeric(dt[col], errors="coerce")
 
 fig = go.Figure()
 
-# Limpiar los nombres de las regiones (quitar el "1.x. " del inicio)
+# 3. Limpiar los nombres de las regiones (quitar el "1.x. " del inicio)
 nombres_regiones = [col.split(". ", 1)[-1] if ". " in col else col for col in columnas_regiones]
 
 # Evitar errores si por alguna razón no encuentra columnas
@@ -182,7 +182,7 @@ if not nombres_regiones:
     nombres_regiones = ["Sin datos"]
     columnas_regiones = []
 
-# Agregar una línea (trace) por cada región
+# 4. Agregar una línea (trace) por cada región
 for i, col in enumerate(columnas_regiones):
     fig.add_trace(go.Scatter(
         x=dt["fecha"], 
@@ -192,7 +192,7 @@ for i, col in enumerate(columnas_regiones):
         line=dict(color="#27ae60", width=2)
     ))
 
-# Crear los botones del menú desplegable
+# 5. Crear los botones del menú desplegable
 botones = []
 for i, nombre in enumerate(nombres_regiones):
     visibilidad = [False] * len(columnas_regiones)
@@ -203,12 +203,12 @@ for i, nombre in enumerate(nombres_regiones):
         method="update",
         args=[
             {"visible": visibilidad},
-            {"title.text": f"Tasa de desempleo: {nombre} (%)"} # <-- CORRECCIÓN CLAVE AQUÍ
+            {"title.text": f"Tasa de desempleo: {nombre} (%)"} 
         ]
     )
     botones.append(boton)
 
-# Configurar el diseño y agregar el menú
+# 6. Configurar el diseño y agregar el menú
 titulo_inicial = f"Tasa de desempleo: {nombres_regiones[0]} (%)"
 
 fig.update_layout(
