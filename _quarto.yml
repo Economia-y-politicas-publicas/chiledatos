@@ -1,6 +1,8 @@
-project:
+  project:
   type: website
   output-dir: _site
+  resources:
+    - googleef02c443fa87502b.html
 
 website:
   title: "Economía y Políticas Públicas"
