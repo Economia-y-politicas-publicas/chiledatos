@@ -164,8 +164,8 @@ Image("../imagenes/trabajo/linkedin.png", width=800)
 
 ---
 
-# 1. Identificar las columnas de las regiones (todas las que quedan excluyendo las principales)
-columnas_excluir = ['periodo', 'año', 'mes', 'total', 'hombre', 'mujer', 'Nacional']
+# 1. Identificar las columnas de las regiones (agregamos 'fecha' y 'brecha' a la exclusión)
+columnas_excluir = ['periodo', 'año', 'mes', 'total', 'hombre', 'mujer', 'Nacional', 'fecha', 'brecha']
 columnas_regiones = [col for col in dt.columns if col not in columnas_excluir]
 
 # 2. Asegurar que todas las columnas regionales sean numéricas
@@ -174,7 +174,7 @@ for col in columnas_regiones:
 
 fig = go.Figure()
 
-# Al haber simplificado el CSV, los nombres de las columnas ya están limpios
+# Los nombres de las regiones ya vienen limpios del CSV
 nombres_regiones = columnas_regiones
 
 # 3. Agregar una línea (trace) por cada región
@@ -183,7 +183,7 @@ for i, col in enumerate(columnas_regiones):
         x=dt["fecha"], 
         y=dt[col],
         name=nombres_regiones[i],
-        visible=(i == 0), # Solo la primera región (Arica) será visible al cargar
+        visible=(i == 0), # Solo la primera región será visible por defecto
         line=dict(color="#27ae60", width=2)
     ))
 
@@ -203,7 +203,7 @@ for i, nombre in enumerate(nombres_regiones):
     )
     botones.append(boton)
 
-# 5. Configurar el diseño y agregar el menú interactivo
+# 5. Configurar el diseño y agregar el menú
 titulo_inicial = f"Tasa de desempleo: {nombres_regiones[0]} (%)"
 
 fig.update_layout(
