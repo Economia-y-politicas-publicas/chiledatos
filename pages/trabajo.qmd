@@ -219,14 +219,16 @@ fig.update_layout(
         bordercolor="lightgray",
         borderwidth=1,
     ),
-    xaxis_rangeslider=dict(visible=True),
+    xaxis_rangeslider=dict(
+    visible=True,
+    thickness=0.05,),  # más delgado (default es 0.15) 
     # Botón para limpiar el gráfico
     updatemenus=[dict(
         type="buttons",
         showactive=False,
-        x=0.0,
-        y=-0.25,
-        xanchor="left",
+        x=1.0,
+        y=-0.15,
+        xanchor="right",
         yanchor="top",
         buttons=[
             dict(
