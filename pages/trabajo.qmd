@@ -16,9 +16,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-url = "https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/trabajo.csv"
-
-dt = pd.read_csv(url, sep=",", encoding="utf-8")
+# En lugar de la URL, pon la ruta de tu archivo:
+dt = pd.read_csv("C:/Users/juanm/Desktop/manim/quarto-template/datadata/trabajo.csv", sep=",", encoding="utf-8")
 dt = dt.rename(columns={
     "Tiempo": "periodo", "Año": "año", "Mes": "mes",
     "Total": "total", "Hombre": "hombre", "Mujer": "mujer"
