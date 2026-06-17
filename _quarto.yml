@@ -1,9 +1,8 @@
-  project:
+project:
   type: website
   output-dir: _site
   resources:
     - googleef02c443fa87502b.html
-
 
 website:
   title: "Economía y Políticas Públicas"
@@ -23,10 +22,11 @@ website:
       - href: pages/finanzas_publicas.qmd
         text: Finanzas Públicas
       - href: pages/trabajo.qmd
-        text: Mercado Laboral  
+        text: Mercado Laboral
     right:
       - icon: github
         href: https://github.com/Economia-y-politicas-publicas/chiledatos
+
   page-footer:
     left: "© 2026 Economía y Políticas Públicas · Datos públicos de Chile"
     right:
@@ -35,7 +35,9 @@ website:
 
 format:
   html:
-    theme: [darkly, styles/custom.scss]
+    theme:
+      - darkly
+      - styles/custom.scss
     toc: true
     toc-depth: 3
     toc-title: "En esta página"
