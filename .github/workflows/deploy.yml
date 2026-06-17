@@ -3,6 +3,8 @@ name: Deploy Quarto Site
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "0 12 * * 1-5"  # lunes a viernes a las 12:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -37,6 +39,9 @@ jobs:
 
       - name: Render Quarto site
         run: quarto render --cache-refresh
+        env:
+          BCENTRAL_USER: ${{ secrets.BCENTRAL_USER }}
+          BCENTRAL_PASS: ${{ secrets.BCENTRAL_PASS }}
 
       - name: Upload artifact para GitHub Pages
         uses: actions/upload-pages-artifact@v3
