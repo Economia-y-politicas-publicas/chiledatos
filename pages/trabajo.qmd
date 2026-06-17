@@ -163,13 +163,14 @@ Image("../imagenes/trabajo/linkedin.png", width=800)
 ```
 
 ---
-
-# 1. Identificar las columnas de las regiones (agregamos 'fecha' y 'brecha' a la exclusión)
+# 1. Identificar las columnas de las regiones
 columnas_excluir = ['periodo', 'año', 'mes', 'total', 'hombre', 'mujer', 'Nacional', 'fecha', 'brecha']
 columnas_regiones = [col for col in dt.columns if col not in columnas_excluir]
 
-# 2. Asegurar que todas las columnas regionales sean numéricas
+# 2. Limpiar los datos y asegurar que todas las columnas regionales sean numéricas
 for col in columnas_regiones:
+    # Convertir a texto, cambiar posibles comas por puntos, borrar espacios y forzar a número
+    dt[col] = dt[col].astype(str).str.replace(',', '.').str.strip()
     dt[col] = pd.to_numeric(dt[col], errors="coerce")
 
 fig = go.Figure()
@@ -183,7 +184,7 @@ for i, col in enumerate(columnas_regiones):
         x=dt["fecha"], 
         y=dt[col],
         name=nombres_regiones[i],
-        visible=(i == 0), # Solo la primera región será visible por defecto
+        visible=(i == 0), # Solo la primera región será visible al inicio
         line=dict(color="#27ae60", width=2)
     ))
 
@@ -204,7 +205,11 @@ for i, nombre in enumerate(nombres_regiones):
     botones.append(boton)
 
 # 5. Configurar el diseño y agregar el menú
-titulo_inicial = f"Tasa de desempleo: {nombres_regiones[0]} (%)"
+# Usamos un try/except por si la lista de nombres llega vacía para que no se caiga
+try:
+    titulo_inicial = f"Tasa de desempleo: {nombres_regiones[0]} (%)"
+except IndexError:
+    titulo_inicial = "Tasa de desempleo: Sin datos"
 
 fig.update_layout(
     title=dict(text=titulo_inicial, font=dict(size=16)),
