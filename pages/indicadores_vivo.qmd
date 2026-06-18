@@ -164,7 +164,7 @@ def tarjeta(nombre, df, prefijo="", sufijo="", formato=",.0f"):
 ```
 
 ::: {.callout-note}
-Los datos se actualizan automáticamente de lunes a viernes desde la API del Banco Central de Chile. Última actualización: **`{python} ultima_actualizacion`**
+Los datos se actualizan automáticamente de lunes a viernes desde la API del Banco Central de Chile.
 :::
 
 ## Resumen
