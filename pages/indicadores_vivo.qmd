@@ -84,7 +84,7 @@ def grafico_linea(df, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo
         margin=dict(b=100, t=60),
         annotations=[dict(
             text="Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile",
-            x=0, y=-0.25, xref="paper", yref="paper",
+            x=0, y=-0.45, xref="paper", yref="paper",
             showarrow=False, font=dict(size=9, color="gray"), xanchor="left",
         )],
     )
@@ -189,6 +189,6 @@ grafico_linea(utm, "Unidad Tributaria Mensual (UTM)", "Pesos chilenos",
 El **IPC (Índice de Precios al Consumidor)** mide la variación mensual de los precios de una canasta representativa de bienes y servicios. Es el principal indicador de inflación en Chile.
 
 ```{python}
-grafico_linea(ipc, "Variación mensual IPC (%)", "Variación (%)",
+grafico_linea(ipc, "Variación anual IPC (%)", "Variación (%)",
               color="rgb(231,76,60)", formato_y=".2f", sufijo="%").show()
 ```
