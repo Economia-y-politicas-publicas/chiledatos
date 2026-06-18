@@ -41,29 +41,64 @@ def obtener_serie(codigo, dias=365):
     df["valor"] = pd.to_numeric(df["value"], errors="coerce")
     return df.dropna(subset=["valor"]).sort_values("fecha")
 
-AUTOR = "Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile"
+def grafico_linea(df, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo=""):
+    ultimo = df["valor"].iloc[-1]
+    fecha = df["fecha"].iloc[-1].strftime("%d/%m/%Y")
+    minimo = df["valor"].min()
+    maximo = df["valor"].max()
+    margen = (maximo - minimo) * 0.05
 
-def agregar_autor(fig):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df["fecha"], y=df["valor"],
+        mode="lines",
+        line=dict(color=color, width=2),
+        fill="tozeroy",
+        fillcolor=color.replace(")", ",0.1)").replace("rgb", "rgba"),
+        hovertemplate=f"<b>%{{x|%d %b %Y}}</b><br>{prefijo}%{{y:{formato_y}}}{sufijo}<extra></extra>",
+    ))
     fig.update_layout(
+        title=dict(
+            text=f"{titulo} — Último: {prefijo}{ultimo:{formato_y}}{sufijo} ({fecha})",
+            font=dict(size=15)
+        ),
+        yaxis=dict(
+            title=ytitle,
+            tickformat=formato_y,
+            tickprefix=prefijo,
+            ticksuffix=sufijo,
+            range=[minimo - margen, maximo + margen],
+        ),
+        xaxis=dict(dtick="M1", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
+        template="plotly_white",
+        font_family="Inter",
+        height=380,
+        margin=dict(b=100, t=60),
         annotations=[dict(
-            text=AUTOR, x=0, y=-0.18,
-            xref="paper", yref="paper",
-            showarrow=False,
-            font=dict(size=10, color="gray"),
-            xanchor="left",
-        )]
+            text="Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile",
+            x=0, y=-0.25, xref="paper", yref="paper",
+            showarrow=False, font=dict(size=9, color="gray"), xanchor="left",
+        )],
     )
     return fig
 
-# Cargar tipo de cambio
-tco = obtener_serie("F073.TCO.PRE.Z.D", dias=365)
-ultimo_tco = tco["valor"].iloc[-1]
-fecha_tco = tco["fecha"].iloc[-1].strftime("%d/%m/%Y")
+# Cargar todas las series
 ultima_actualizacion = datetime.today().strftime("%d/%m/%Y %H:%M")
+
+tco   = obtener_serie("F073.TCO.PRE.Z.D")
+uf    = obtener_serie("F073.UFF.PRE.Z.D")
+ivp   = obtener_serie("F073.IVP.PRE.Z.D")
+euro  = obtener_serie("F072.EUR.EUR.N.Z.D")
+oro   = obtener_serie("F019.ORO.PRE.Z.D")
+plata = obtener_serie("F019.PLA.PRE.Z.D")
+cobre = obtener_serie("F019.COB.PRE.Z.D")
+ipc   = obtener_serie("F074.IPC.IPC.TBM.M", dias=1095)
+tpm   = obtener_serie("F022.BCH.INT.INF.M", dias=1095)
+utm   = obtener_serie("F073.UTM.PRE.Z.M",   dias=1095)
 ```
 
 ::: {.callout-note}
-Los datos se actualizan automáticamente cada vez que se publica el sitio.
+Los datos se actualizan automáticamente de lunes a viernes. Datos obtenidos desde la API del Banco Central de Chile.
 :::
 
 ```{python}
@@ -71,35 +106,82 @@ Los datos se actualizan automáticamente cada vez que se publica el sitio.
 print(f"Última actualización: {ultima_actualizacion}")
 ```
 
-## Tipo de cambio USD/CLP
+---
 
-El **tipo de cambio observado** es el promedio ponderado de las operaciones de compra y venta del mercado cambiario formal, publicado diariamente por el Banco Central de Chile.
+## 💵 Tipos de Cambio
+
+Los tipos de cambio reflejan el valor relativo entre monedas. El **dólar observado** es el promedio ponderado de las operaciones del mercado cambiario formal publicado diariamente por el Banco Central.
 
 ```{python}
-#| echo: false
-print(f"Último valor: ${ultimo_tco:,.2f} CLP/USD ({fecha_tco})")
+grafico_linea(tco, "Dólar observado USD/CLP", "CLP por USD",
+              color="rgb(41,128,185)", formato_y=",.0f", prefijo="$").show()
 ```
 
 ```{python}
-fig = go.Figure()
-fig.add_trace(go.Scatter(
-    x=tco["fecha"], y=tco["valor"],
-    mode="lines",
-    name="USD/CLP",
-    line=dict(color="#2980b9", width=2),
-    fill="tozeroy",
-    fillcolor="rgba(41,128,185,0.1)",
-    hovertemplate="<b>%{x|%d %b %Y}</b><br>$%{y:,.2f} CLP<extra></extra>",
-))
-fig.update_layout(
-    title=dict(text=f"Tipo de cambio USD/CLP — Último: ${ultimo_tco:,.2f} ({fecha_tco})", font=dict(size=16)),
-    yaxis_title="CLP por USD",
-    xaxis=dict(dtick="M1", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
-    template="plotly_white",
-    font_family="Inter",
-    height=420,
-    margin=dict(b=100),
-)
-agregar_autor(fig)
-fig.show()
+grafico_linea(euro, "Euro EUR/CLP", "CLP por EUR",
+              color="rgb(52,152,219)", formato_y=",.0f", prefijo="$").show()
+```
+
+---
+
+## 📊 Unidades de Reajuste
+
+La **UF (Unidad de Fomento)** y el **IVP (Índice de Valor Promedio)** son unidades de cuenta reajustables según la inflación, usadas en contratos hipotecarios, arriendos y otros instrumentos financieros.
+
+```{python}
+grafico_linea(uf, "Unidad de Fomento (UF)", "Pesos chilenos",
+              color="rgb(39,174,96)", formato_y=",.2f", prefijo="$").show()
+```
+
+```{python}
+grafico_linea(ivp, "Índice de Valor Promedio (IVP)", "Pesos chilenos",
+              color="rgb(46,204,113)", formato_y=",.2f", prefijo="$").show()
+```
+
+---
+
+## 🪙 Materias Primas
+
+Chile es el mayor productor mundial de **cobre**, por lo que su precio tiene un impacto directo en los ingresos fiscales y el tipo de cambio. El oro y la plata son referencias internacionales de valor.
+
+```{python}
+grafico_linea(cobre, "Cobre (centavos de dólar por libra)", "USD centavos/libra",
+              color="rgb(211,84,0)", formato_y=".2f").show()
+```
+
+```{python}
+grafico_linea(oro, "Oro (dólares por onza troy)", "USD/onza troy",
+              color="rgb(243,156,18)", formato_y=",.2f", prefijo="$").show()
+```
+
+```{python}
+grafico_linea(plata, "Plata (dólares por onza troy)", "USD/onza troy",
+              color="rgb(149,165,166)", formato_y=",.2f", prefijo="$").show()
+```
+
+---
+
+## 🏦 Tasas e Indicadores Monetarios
+
+La **Tasa de Política Monetaria (TPM)** es el principal instrumento del Banco Central para controlar la inflación. La **UTM** es una unidad tributaria usada para expresar multas y valores en el sistema tributario chileno.
+
+```{python}
+grafico_linea(tpm, "Tasa de Política Monetaria (TPM)", "Porcentaje (%)",
+              color="rgb(142,68,173)", formato_y=".2f", sufijo="%").show()
+```
+
+```{python}
+grafico_linea(utm, "Unidad Tributaria Mensual (UTM)", "Pesos chilenos",
+              color="rgb(52,73,94)", formato_y=",.0f", prefijo="$").show()
+```
+
+---
+
+## 📈 Inflación
+
+El **IPC (Índice de Precios al Consumidor)** mide la variación mensual de los precios de una canasta representativa de bienes y servicios. Es el principal indicador de inflación en Chile.
+
+```{python}
+grafico_linea(ipc, "Variación mensual IPC (%)", "Variación (%)",
+              color="rgb(231,76,60)", formato_y=".2f", sufijo="%").show()
 ```
