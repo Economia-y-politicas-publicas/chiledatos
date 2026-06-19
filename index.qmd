@@ -5,7 +5,28 @@ toc: false
 ---
 
 ```{=html}
-<div class="hero">
+<div id="particles-js" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1;"></div>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2/tsparticles.slim.bundle.min.js"></script>
+<script>
+tsParticles.load("particles-js", {
+  particles: {
+    number: { value: 60 },
+    color: { value: "#ffffff" },
+    opacity: { value: 0.3 },
+    size: { value: 2 },
+    move: { enable: true, speed: 0.5 },
+    links: {
+      enable: true,
+      color: "#ffffff",
+      opacity: 0.15,
+      distance: 120,
+    },
+  },
+  background: { color: "#1a1a2e" },
+});
+</script>
+
+<div class="hero" style="position:relative; z-index:1;">
   <h1>📊 Economía y Políticas Públicas</h1>
   <p class="lead">
     Hub de información económica sobre Chile y el mundo, construido con datos públicos e interactivos.
