@@ -1,0 +1,397 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"📡 Indicadores en Vivo\"\n",
+        "subtitle: \"Datos diarios del Banco Central de Chile\"\n",
+        "date: last-modified\n",
+        "format:\n",
+        "  html:\n",
+        "    page-layout: full\n",
+        "---"
+      ],
+      "id": "3c03adc7"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| label: setup\n",
+        "#| include: false\n",
+        "\n",
+        "import os\n",
+        "import requests\n",
+        "import pandas as pd\n",
+        "import plotly.graph_objects as go\n",
+        "from datetime import datetime, timedelta\n",
+        "\n",
+        "usuario = os.environ.get(\"BCENTRAL_USER\")\n",
+        "password = os.environ.get(\"BCENTRAL_PASS\")\n",
+        "\n",
+        "URL_API = \"https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx\"\n",
+        "\n",
+        "def obtener_serie(codigo, dias=365):\n",
+        "    hoy = datetime.today()\n",
+        "    inicio = (hoy - timedelta(days=dias)).strftime(\"%Y-%m-%d\")\n",
+        "    fin = hoy.strftime(\"%Y-%m-%d\")\n",
+        "    params = {\n",
+        "        \"user\": usuario,\n",
+        "        \"pass\": password,\n",
+        "        \"function\": \"GetSeries\",\n",
+        "        \"timeseries\": codigo,\n",
+        "        \"firstdate\": inicio,\n",
+        "        \"lastdate\": fin,\n",
+        "        \"format\": \"json\",\n",
+        "    }\n",
+        "    try:\n",
+        "        r = requests.get(URL_API, params=params, timeout=10)\n",
+        "        data = r.json()\n",
+        "        obs = data[\"Series\"][\"Obs\"]\n",
+        "        df = pd.DataFrame(obs)\n",
+        "        col_fecha = \"indexDateString\" if \"indexDateString\" in df.columns else df.columns[0]\n",
+        "        col_valor = \"value\" if \"value\" in df.columns else df.columns[1]\n",
+        "        df[\"fecha\"] = pd.to_datetime(df[col_fecha], format=\"%d-%m-%Y\", errors=\"coerce\")\n",
+        "        df[\"valor\"] = pd.to_numeric(df[col_valor], errors=\"coerce\")\n",
+        "        return df.dropna(subset=[\"valor\"]).sort_values(\"fecha\").reset_index(drop=True)\n",
+        "    except Exception as e:\n",
+        "        print(f\"Error cargando {codigo}: {e}\")\n",
+        "        return pd.DataFrame(columns=[\"fecha\", \"valor\"])\n",
+        "\n",
+        "def grafico_linea(df, titulo, ytitle, color, formato_y=\".2f\", prefijo=\"\", sufijo=\"\"):\n",
+        "    if df.empty:\n",
+        "        return go.Figure()\n",
+        "    ultimo = df[\"valor\"].iloc[-1]\n",
+        "    fecha = df[\"fecha\"].iloc[-1].strftime(\"%d/%m/%Y\")\n",
+        "    minimo = df[\"valor\"].min()\n",
+        "    maximo = df[\"valor\"].max()\n",
+        "    margen = (maximo - minimo) * 0.05\n",
+        "    fig = go.Figure()\n",
+        "    fig.add_trace(go.Scatter(\n",
+        "        x=df[\"fecha\"], y=df[\"valor\"],\n",
+        "        mode=\"lines\",\n",
+        "        line=dict(color=color, width=2),\n",
+        "        fill=\"tozeroy\",\n",
+        "        fillcolor=color.replace(\")\", \",0.1)\").replace(\"rgb\", \"rgba\"),\n",
+        "        hovertemplate=f\"<b>%{{x|%d %b %Y}}</b><br>{prefijo}%{{y:{formato_y}}}{sufijo}<extra></extra>\",\n",
+        "    ))\n",
+        "    fig.update_layout(\n",
+        "        title=dict(text=f\"{titulo} — Último: {prefijo}{ultimo:{formato_y}}{sufijo} ({fecha})\", font=dict(size=15)),\n",
+        "        yaxis=dict(title=ytitle, tickformat=formato_y, tickprefix=prefijo, ticksuffix=sufijo, range=[minimo - margen, maximo + margen]),\n",
+        "        xaxis=dict(dtick=\"M1\", tickformat=\"%b %Y\", tickangle=45, tickfont=dict(size=10)),\n",
+        "        template=\"plotly_white\",\n",
+        "        font_family=\"Inter\",\n",
+        "        height=380,\n",
+        "        margin=dict(b=100, t=60),\n",
+        "        annotations=[dict(\n",
+        "            text=\"Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile\",\n",
+        "            x=0, y=-0.3, xref=\"paper\", yref=\"paper\",\n",
+        "            showarrow=False, font=dict(size=9, color=\"gray\"), xanchor=\"left\",\n",
+        "        )],\n",
+        "    )\n",
+        "    return fig\n",
+        "\n",
+        "def variacion(df):\n",
+        "    if len(df) < 2:\n",
+        "        return 0, \"gray\"\n",
+        "    v = ((df[\"valor\"].iloc[-1] - df[\"valor\"].iloc[-2]) / df[\"valor\"].iloc[-2]) * 100\n",
+        "    color = \"#2ecc71\" if v >= 0 else \"#e74c3c\"\n",
+        "    return v, color\n",
+        "\n",
+        "ultima_actualizacion = datetime.today().strftime(\"%d/%m/%Y %H:%M\")\n",
+        "\n",
+        "tco   = obtener_serie(\"F073.TCO.PRE.Z.D\")\n",
+        "uf    = obtener_serie(\"F073.UFF.PRE.Z.D\")\n",
+        "ivp   = obtener_serie(\"F073.IVP.PRE.Z.D\")\n",
+        "euro  = obtener_serie(\"F072.CLP.EUR.N.O.D\")\n",
+        "oro   = obtener_serie(\"F019.PPB.PRE.44B.M\")\n",
+        "plata = obtener_serie(\"F019.PPB.PRE.45B.M\")\n",
+        "cobre = obtener_serie(\"F019.PPB.PRE.40.M\")\n",
+        "ipc   = obtener_serie(\"F074.IPC.IND.Z.EP09.C.M\", dias=1095)\n",
+        "tpm   = obtener_serie(\"F022.TPM.TIN.D001.NO.Z.M\", dias=1095)\n",
+        "utm   = obtener_serie(\"F073.UTR.PRE.Z.M\", dias=1095)\n",
+        "\n",
+        "def tarjeta(nombre, df, prefijo=\"\", sufijo=\"\", formato=\",.0f\"):\n",
+        "    if df.empty:\n",
+        "        return f'<div class=\"ind-card\"><div class=\"ind-name\">{nombre}</div><div class=\"ind-value\">N/D</div></div>'\n",
+        "    val = df[\"valor\"].iloc[-1]\n",
+        "    fecha = df[\"fecha\"].iloc[-1].strftime(\"%d/%m/%Y\")\n",
+        "    var, color = variacion(df)\n",
+        "    flecha = \"▲\" if var >= 0 else \"▼\"\n",
+        "    return f\"\"\"\n",
+        "<div class=\"ind-card\">\n",
+        "  <div class=\"ind-name\">{nombre}</div>\n",
+        "  <div class=\"ind-value\">{prefijo}{val:{formato}}{sufijo}</div>\n",
+        "  <div class=\"ind-var\" style=\"color:{color}\">{flecha} {abs(var):.2f}%</div>\n",
+        "  <div class=\"ind-fecha\">{fecha}</div>\n",
+        "</div>\"\"\""
+      ],
+      "id": "setup",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "```{=html}\n",
+        "<style>\n",
+        ".ind-grid {\n",
+        "  display: grid;\n",
+        "  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));\n",
+        "  gap: 1rem;\n",
+        "  margin: 1.5rem 0 2rem;\n",
+        "}\n",
+        ".ind-card {\n",
+        "  background: rgba(255,255,255,0.05);\n",
+        "  border: 1px solid rgba(255,255,255,0.1);\n",
+        "  border-radius: 12px;\n",
+        "  padding: 1.2rem 1rem;\n",
+        "  text-align: center;\n",
+        "  transition: transform .15s ease, box-shadow .15s ease;\n",
+        "}\n",
+        ".ind-card:hover {\n",
+        "  transform: translateY(-3px);\n",
+        "  box-shadow: 0 6px 20px rgba(0,0,0,0.3);\n",
+        "}\n",
+        ".ind-name {\n",
+        "  font-size: .8rem;\n",
+        "  text-transform: uppercase;\n",
+        "  letter-spacing: .5px;\n",
+        "  opacity: .6;\n",
+        "  margin-bottom: .4rem;\n",
+        "}\n",
+        ".ind-value {\n",
+        "  font-size: 1.6rem;\n",
+        "  font-weight: 700;\n",
+        "  letter-spacing: -1px;\n",
+        "  margin-bottom: .3rem;\n",
+        "}\n",
+        ".ind-var {\n",
+        "  font-size: .9rem;\n",
+        "  font-weight: 600;\n",
+        "}\n",
+        ".ind-fecha {\n",
+        "  font-size: .75rem;\n",
+        "  opacity: .45;\n",
+        "  margin-top: .3rem;\n",
+        "}\n",
+        "</style>\n",
+        "```\n",
+        "\n",
+        "::: {.callout-note}\n",
+        "Los datos se actualizan automáticamente de lunes a viernes desde la API del Banco Central de Chile.\n",
+        ":::\n",
+        "\n",
+        "## Resumen"
+      ],
+      "id": "4e533a88"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| echo: false\n",
+        "from IPython.display import HTML\n",
+        "\n",
+        "html = '<div class=\"ind-grid\">'\n",
+        "html += tarjeta(\"Dólar USD\", tco, prefijo=\"$\", formato=\",.0f\")\n",
+        "html += tarjeta(\"Euro\", euro, prefijo=\"$\", formato=\",.0f\")\n",
+        "html += tarjeta(\"UF\", uf, prefijo=\"$\", formato=\",.2f\")\n",
+        "html += tarjeta(\"IVP\", ivp, prefijo=\"$\", formato=\",.2f\")\n",
+        "html += tarjeta(\"UTM\", utm, prefijo=\"$\", formato=\",.0f\")\n",
+        "html += tarjeta(\"TPM\", tpm, sufijo=\"%\", formato=\".2f\")\n",
+        "html += tarjeta(\"Cobre\", cobre, sufijo=\" ¢/lb\", formato=\".2f\")\n",
+        "html += tarjeta(\"Oro\", oro, prefijo=\"$\", sufijo=\" oz\", formato=\",.2f\")\n",
+        "html += tarjeta(\"Plata\", plata, prefijo=\"$\", sufijo=\" oz\", formato=\",.2f\")\n",
+        "html += '</div>'\n",
+        "HTML(html)"
+      ],
+      "id": "e3e4ea38",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "\n",
+        "## 💵 Tipos de Cambio\n",
+        "\n",
+        "Los tipos de cambio reflejan el valor relativo entre monedas. El **dólar observado** es el promedio ponderado de las operaciones del mercado cambiario formal publicado diariamente por el Banco Central."
+      ],
+      "id": "9051f8b2"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(tco, \"Dólar observado USD/CLP\", \"CLP por USD\",\n",
+        "              color=\"rgb(41,128,185)\", formato_y=\",.0f\", prefijo=\"$\").show()"
+      ],
+      "id": "8834d020",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(euro, \"Euro EUR/CLP\", \"CLP por EUR\",\n",
+        "              color=\"rgb(52,152,219)\", formato_y=\",.0f\", prefijo=\"$\").show()"
+      ],
+      "id": "d4f0e140",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "\n",
+        "## 📊 Unidades de Reajuste\n",
+        "\n",
+        "La **UF (Unidad de Fomento)** y el **IVP (Índice de Valor Promedio)** son unidades de cuenta reajustables según la inflación, usadas en contratos hipotecarios, arriendos y otros instrumentos financieros."
+      ],
+      "id": "f05bb2b4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(uf, \"Unidad de Fomento (UF)\", \"Pesos chilenos\",\n",
+        "              color=\"rgb(39,174,96)\", formato_y=\",.2f\", prefijo=\"$\").show()"
+      ],
+      "id": "d6967d91",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(ivp, \"Índice de Valor Promedio (IVP)\", \"Pesos chilenos\",\n",
+        "              color=\"rgb(46,204,113)\", formato_y=\",.2f\", prefijo=\"$\").show()"
+      ],
+      "id": "94fc0f3d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "\n",
+        "## 🪙 Materias Primas\n",
+        "\n",
+        "Chile es el mayor productor mundial de **cobre**, por lo que su precio tiene un impacto directo en los ingresos fiscales y el tipo de cambio. El oro y la plata son referencias internacionales de valor."
+      ],
+      "id": "e5c146b9"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(cobre, \"Cobre (centavos de dólar por libra)\", \"USD centavos/libra\",\n",
+        "              color=\"rgb(211,84,0)\", formato_y=\".2f\").show()"
+      ],
+      "id": "666dde02",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(oro, \"Oro (dólares por onza troy)\", \"USD/onza troy\",\n",
+        "              color=\"rgb(243,156,18)\", formato_y=\",.2f\", prefijo=\"$\").show()"
+      ],
+      "id": "41c7988b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(plata, \"Plata (dólares por onza troy)\", \"USD/onza troy\",\n",
+        "              color=\"rgb(149,165,166)\", formato_y=\",.2f\", prefijo=\"$\").show()"
+      ],
+      "id": "b88dbe78",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "\n",
+        "## 🏦 Tasas e Indicadores Monetarios\n",
+        "\n",
+        "La **Tasa de Política Monetaria (TPM)** es el principal instrumento del Banco Central para controlar la inflación. La **UTM** es una unidad tributaria usada para expresar multas y valores en el sistema tributario chileno."
+      ],
+      "id": "353d2600"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(tpm, \"Tasa de Política Monetaria (TPM)\", \"Porcentaje (%)\",\n",
+        "              color=\"rgb(142,68,173)\", formato_y=\".2f\", sufijo=\"%\").show()"
+      ],
+      "id": "ee83a706",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(utm, \"Unidad Tributaria Mensual (UTM)\", \"Pesos chilenos\",\n",
+        "              color=\"rgb(52,73,94)\", formato_y=\",.0f\", prefijo=\"$\").show()"
+      ],
+      "id": "1ff12f54",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "\n",
+        "## 📈 Inflación\n",
+        "\n",
+        "El **IPC (Índice de Precios al Consumidor)** mide la variación mensual de los precios de una canasta representativa de bienes y servicios. Es el principal indicador de inflación en Chile."
+      ],
+      "id": "2b51a5c0"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(ipc, \"Variación anual IPC (%)\", \"Variación (%)\",\n",
+        "              color=\"rgb(231,76,60)\", formato_y=\".2f\", sufijo=\"%\").show()"
+      ],
+      "id": "6840e13f",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "C:\\Users\\juanm\\AppData\\Local\\Programs\\Python\\Python314\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
