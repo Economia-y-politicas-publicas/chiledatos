@@ -1,5 +1,5 @@
 ---
-title: "📡 Indicadores en Vivo"
+title: "🔴 [Indicadores en vivo] 🔴"
 subtitle: "Datos diarios del Banco Central de Chile"
 date: last-modified
 format:
