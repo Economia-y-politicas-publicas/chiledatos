@@ -96,8 +96,11 @@ uf    = obtener_serie("F073.UFF.PRE.Z.D")
 ivp   = obtener_serie("F073.IVP.PRE.Z.D")
 euro  = obtener_serie("F072.CLP.EUR.N.O.D")
 oro   = obtener_serie("F019.PPB.PRE.44.D")
-plata = obtener_serie("F019.PPB.PRE.45B.D")
-cobre = obtener_serie("F019.PPB.PRE.40.D")
+plata = obtener_serie("F019.PPB.PRE.45.D")
+cobre = obtener_serie("F019.PPB.PRE.100.D")
+litio = obtener_serie("F019.PPB.PRE.37.D")
+petroleo = obtener_serie("F019.PPB.PRE.41B.D")
+
 ipc   = obtener_serie("F074.IPC.IND.Z.EP09.C.M", dias=1095)
 tpm   = obtener_serie("F022.TPM.TIN.D001.NO.Z.M", dias=1095)
 utm   = obtener_serie("F073.UTR.PRE.Z.M", dias=1095)
@@ -245,6 +248,18 @@ grafico_linea(oro, "Oro (dólares por onza troy)", "USD/onza troy",
 grafico_linea(plata, "Plata (dólares por onza troy)", "USD/onza troy",
               color="rgb(149,165,166)", formato_y=",.2f", prefijo="$").show()
 ```
+
+```{python}
+grafico_linea(litio, "Litio (dólares por kilo)", "USD/kg",
+              color="rgb(27, 183, 194)", formato_y=",.2f", prefijo="$").show()
+```
+
+```{python}
+grafico_linea(petroleo, "Petróleo WTI (dólares por barril)", "USD/barril",
+              color="rgb(14, 190, 67)", formato_y=",.2f", prefijo="$").show()
+```
+
+
 
 ---
 
