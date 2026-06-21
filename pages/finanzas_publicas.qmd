@@ -63,7 +63,22 @@ def obtener_serie(codigo, dias=1095):
         print(f"Error cargando {codigo}: {e}")
         return pd.DataFrame(columns=["fecha", "valor"])
 
-def grafico_linea(df_, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo=""):
+AUTOR = "Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile"
+EJE_X = dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10))
+
+def agregar_autor(fig):
+    fig.update_layout(
+        annotations=[dict(
+            text=AUTOR, x=0, y=-0.18,
+            xref="paper", yref="paper",
+            showarrow=False,
+            font=dict(size=10, color="gray"),
+            xanchor="left",
+        )]
+    )
+    return fig
+
+def grafico_linea(df_, titulo, ytitle, color, formato_y=",.0f", prefijo="", sufijo=""):
     if df_.empty:
         return go.Figure()
     ultimo = df_["valor"].iloc[-1]
@@ -71,6 +86,8 @@ def grafico_linea(df_, titulo, ytitle, color, formato_y=".2f", prefijo="", sufij
     minimo = df_["valor"].min()
     maximo = df_["valor"].max()
     margen = (maximo - minimo) * 0.05
+    idx_max = df_["valor"].argmax()
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df_["fecha"], y=df_["valor"],
@@ -78,35 +95,50 @@ def grafico_linea(df_, titulo, ytitle, color, formato_y=".2f", prefijo="", sufij
         line=dict(color=color, width=2),
         fill="tozeroy",
         fillcolor=color.replace(")", ",0.1)").replace("rgb", "rgba"),
-        hovertemplate=f"<b>%{{x|%d %b %Y}}</b><br>{prefijo}%{{y:{formato_y}}}{sufijo}<extra></extra>",
+        hovertemplate=f"<b>%{{x|%b %Y}}</b><br>{prefijo}%{{y:{formato_y}}}{sufijo}<extra></extra>",
     ))
     fig.update_layout(
         title=dict(text=f"{titulo} — Último: {prefijo}{ultimo:{formato_y}}{sufijo} ({fecha})", font=dict(size=15)),
-        yaxis=dict(title=ytitle, tickformat=formato_y, tickprefix=prefijo, ticksuffix=sufijo, range=[minimo - margen, maximo + margen]),
-        xaxis=dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
+        yaxis=dict(title=ytitle, tickformat=formato_y, tickprefix=prefijo,
+                   range=[max(0, minimo - margen), maximo + margen]),
+        xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),
         template="plotly_white",
         font_family="Inter",
-        height=400,
+        height=420,
         margin=dict(b=100, t=60),
         annotations=[dict(
-            text="Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile",
-            x=0, y=-0.3, xref="paper", yref="paper",
+            text=AUTOR, x=0, y=-0.28, xref="paper", yref="paper",
             showarrow=False, font=dict(size=9, color="gray"), xanchor="left",
         )],
     )
     return fig
 
-AUTOR = "Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile"
-
-def agregar_autor(fig):
+def grafico_multi(trazas, titulo, ytitle):
+    """trazas = lista de (df, nombre, color, ancho, dash)"""
+    fig = go.Figure()
+    for df_, nombre, color, ancho, dash in trazas:
+        if df_.empty:
+            continue
+        fig.add_trace(go.Scatter(
+            x=df_["fecha"], y=df_["valor"],
+            name=nombre,
+            mode="lines",
+            line=dict(color=color, width=ancho, dash=dash),
+            hovertemplate=f"<b>{nombre}</b><br>%{{x|%b %Y}}<br>${{%{{y:,.0f}}}}M<extra></extra>",
+        ))
     fig.update_layout(
+        title=dict(text=titulo, font=dict(size=15)),
+        yaxis=dict(title=ytitle, tickformat=",.0f"),
+        xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),
+        template="plotly_white",
+        font_family="Inter",
+        legend=dict(orientation="h", y=-0.25, x=0.5, xanchor="center"),
+        height=450,
+        margin=dict(b=120, t=60),
         annotations=[dict(
-            text=AUTOR, x=0, y=-0.15,
-            xref="paper", yref="paper",
-            showarrow=False,
-            font=dict(size=10, color="gray"),
-            xanchor="left",
-        )]
+            text=AUTOR, x=0, y=-0.32, xref="paper", yref="paper",
+            showarrow=False, font=dict(size=9, color="gray"), xanchor="left",
+        )],
     )
     return fig
 
@@ -129,16 +161,17 @@ tratamientoaltocosto = obtener_serie("F051.M12.STO.C.Z.USD.M")
 ```{python}
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_bruta_gc"],
-    name="Deuda bruta", line=dict(color="#e74c3c")))
+    name="Deuda bruta", line=dict(color="#e74c3c", width=2.5)))
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_neta_gc"],
-    name="Deuda neta", line=dict(color="#2980b9")))
-fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+    name="Deuda neta", line=dict(color="#2980b9", width=2, dash="dash")))
+fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.4)
 fig.update_layout(
     title="Gobierno Central: deuda bruta y neta (% del PIB)",
-    yaxis_title="% del PIB", xaxis_title="Período",
+    yaxis=dict(title="% del PIB", tickformat=".1f"),
+    xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),
     template="plotly_white", font_family="Inter",
-    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-    margin=dict(b=80),
+    legend=dict(orientation="h", y=-0.25, x=0.5, xanchor="center"),
+    height=430, margin=dict(b=110),
 )
 agregar_autor(fig)
 fig.show()
@@ -149,16 +182,17 @@ fig.show()
 ```{python}
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_bruta_bc"],
-    name="Deuda bruta", line=dict(color="#e74c3c")))
+    name="Deuda bruta", line=dict(color="#e74c3c", width=2.5)))
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_neta_bc"],
-    name="Deuda neta", line=dict(color="#2980b9")))
-fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+    name="Deuda neta", line=dict(color="#2980b9", width=2, dash="dash")))
+fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.4)
 fig.update_layout(
     title="Banco Central: deuda bruta y neta (% del PIB)",
-    yaxis_title="% del PIB", xaxis_title="Período",
+    yaxis=dict(title="% del PIB", tickformat=".1f"),
+    xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),
     template="plotly_white", font_family="Inter",
-    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-    margin=dict(b=80),
+    legend=dict(orientation="h", y=-0.25, x=0.5, xanchor="center"),
+    height=430, margin=dict(b=110),
 )
 agregar_autor(fig)
 fig.show()
@@ -169,17 +203,18 @@ fig.show()
 ```{python}
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_bruta_sp"],
-    name="Deuda bruta", line=dict(color="#e74c3c"),
-    fill="tozeroy", fillcolor="rgba(231,76,60,0.1)"))
+    name="Deuda bruta", line=dict(color="#e74c3c", width=2.5),
+    fill="tozeroy", fillcolor="rgba(231,76,60,0.08)"))
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_neta_sp"],
-    name="Deuda neta", line=dict(color="#2980b9")))
-fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+    name="Deuda neta", line=dict(color="#2980b9", width=2, dash="dash")))
+fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.4)
 fig.update_layout(
     title="Sector Público Consolidado: deuda bruta y neta (% del PIB)",
-    yaxis_title="% del PIB", xaxis_title="Período",
+    yaxis=dict(title="% del PIB", tickformat=".1f"),
+    xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),
     template="plotly_white", font_family="Inter",
-    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-    margin=dict(b=80),
+    legend=dict(orientation="h", y=-0.25, x=0.5, xanchor="center"),
+    height=430, margin=dict(b=110),
 )
 agregar_autor(fig)
 fig.show()
@@ -190,16 +225,17 @@ fig.show()
 ```{python}
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_bruta_ep"],
-    name="Deuda bruta", line=dict(color="#e74c3c")))
+    name="Deuda bruta", line=dict(color="#e74c3c", width=2.5)))
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_neta_ep"],
-    name="Deuda neta", line=dict(color="#2980b9")))
-fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+    name="Deuda neta", line=dict(color="#2980b9", width=2, dash="dash")))
+fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.4)
 fig.update_layout(
     title="Empresas Públicas: deuda bruta y neta (% del PIB)",
-    yaxis_title="% del PIB", xaxis_title="Período",
+    yaxis=dict(title="% del PIB", tickformat=".1f"),
+    xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),
     template="plotly_white", font_family="Inter",
-    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-    margin=dict(b=80),
+    legend=dict(orientation="h", y=-0.25, x=0.5, xanchor="center"),
+    height=430, margin=dict(b=110),
 )
 agregar_autor(fig)
 fig.show()
@@ -209,65 +245,52 @@ fig.show()
 
 ## 5. Fondos Soberanos
 
-```{python}
-# 1. Fondos soberanos consolidados
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=fondossoberanos["fecha"], y=fondossoberanos["valor"],
-    name="Total consolidado", line=dict(color="#2980b9", width=2)))
-fig.add_trace(go.Scatter(x=fees["fecha"], y=fees["valor"],
-    name="FEES", line=dict(color="#27ae60", width=2)))
-fig.add_trace(go.Scatter(x=frp["fecha"], y=frp["valor"],
-    name="FRP", line=dict(color="#8e44ad", width=2)))
-fig.update_layout(
-    title="Fondos Soberanos: Total, FEES y FRP (millones de USD)",
-    yaxis_title="Millones de USD",
-    xaxis=dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
-    template="plotly_white", font_family="Inter",
-    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-    height=420, margin=dict(b=100),
-    annotations=[dict(text=AUTOR, x=0, y=-0.3, xref="paper", yref="paper",
-        showarrow=False, font=dict(size=9, color="gray"), xanchor="left")],
-)
-fig.show()
-```
+### 📦 Fondos Soberanos: Total, FEES y FRP
 
 ```{python}
-# 2. OATP por composición
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=oatp["fecha"], y=oatp["valor"],
-    name="OATP Total", line=dict(color="#e74c3c", width=2)))
-fig.add_trace(go.Scatter(x=pesos["fecha"], y=pesos["valor"],
-    name="En pesos", line=dict(color="#f39c12", width=2)))
-fig.add_trace(go.Scatter(x=dolar["fecha"], y=dolar["valor"],
-    name="En dólares", line=dict(color="#2980b9", width=2)))
-fig.update_layout(
-    title="Otros Activos del Tesoro Público (OATP) por moneda (millones de USD)",
-    yaxis_title="Millones de USD",
-    xaxis=dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
-    template="plotly_white", font_family="Inter",
-    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-    height=420, margin=dict(b=100),
-    annotations=[dict(text=AUTOR, x=0, y=-0.3, xref="paper", yref="paper",
-        showarrow=False, font=dict(size=9, color="gray"), xanchor="left")],
-)
-fig.show()
+grafico_multi(
+    trazas=[
+        (fondossoberanos, "Total consolidado", "#2980b9", 3,   "solid"),
+        (fees,            "FEES",              "#27ae60", 1.5, "dash"),
+        (frp,             "FRP",               "#8e44ad", 1.5, "dot"),
+    ],
+    titulo="Fondos Soberanos: Total, FEES y FRP (millones de USD)",
+    ytitle="Millones de USD",
+).show()
 ```
 
-```{python}
-# 3. Fondos para educación
-# 3. Fondos para la educación (FpE)
-grafico_linea(fondoeduc, "Fondos para la Educación (FpE)", "Millones de USD",
-              color="rgb(243,156,18)", formato_y=",.0f", prefijo="$").show()
-```
+### 🏦 Otros Activos del Tesoro Público (OATP)
 
 ```{python}
-# 4. Fondo de Apoyo Regional
-grafico_linea(fapr, "Fondo de Apoyo a las Regiones (FAPR)", "Millones de USD",
-              color="rgb(22,160,133)", formato_y=",.0f", prefijo="$").show()
+grafico_multi(
+    trazas=[
+        (oatp,  "OATP Total",  "#e74c3c", 3,   "solid"),
+        (pesos, "En pesos",    "#f39c12", 1.5, "dash"),
+        (dolar, "En dólares",  "#2980b9", 1.5, "dot"),
+    ],
+    titulo="Otros Activos del Tesoro Público (OATP) por moneda (millones de USD)",
+    ytitle="Millones de USD",
+).show()
 ```
 
+### 🎓 Fondos para la Educación (FpE)
+
 ```{python}
-# 5. Fondo para diagnósticos y tratamientos de alto costo
-grafico_linea(tratamientoaltocosto, "Fondo para Diagnósticos y Tratamientos de Alto Costo",
-              "Millones de USD", color="rgb(231,76,60)", formato_y=",.0f", prefijo="$").show()
+grafico_linea(fondoeduc, "Fondos para la Educación (FpE)",
+              "Millones de USD", color="rgb(243,156,18)").show()
+```
+
+### 🗺️ Fondo de Apoyo Regional (FAPR)
+
+```{python}
+grafico_linea(fapr, "Fondo de Apoyo a las Regiones (FAPR)",
+              "Millones de USD", color="rgb(22,160,133)").show()
+```
+
+### 🏥 Fondo para Diagnósticos y Tratamientos de Alto Costo
+
+```{python}
+grafico_linea(tratamientoaltocosto,
+              "Fondo para Diagnósticos y Tratamientos de Alto Costo",
+              "Millones de USD", color="rgb(231,76,60)").show()
 ```
