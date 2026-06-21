@@ -210,26 +210,77 @@ fig.show()
 ## 5. Fondos Soberanos
 
 ```{python}
-grafico_linea(fondossoberanos, "Activos consolidados totales", "Millones de USD",
-              color="rgb(52,152,219)", formato_y=",.0f", prefijo="$").show()
+# 1. Fondos soberanos consolidados
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=fondossoberanos["fecha"], y=fondossoberanos["valor"],
+    name="Total consolidado", line=dict(color="#2980b9", width=2)))
+fig.add_trace(go.Scatter(x=fees["fecha"], y=fees["valor"],
+    name="FEES", line=dict(color="#27ae60", width=2)))
+fig.add_trace(go.Scatter(x=frp["fecha"], y=frp["valor"],
+    name="FRP", line=dict(color="#8e44ad", width=2)))
+fig.update_layout(
+    title="Fondos Soberanos: Total, FEES y FRP (millones de USD)",
+    yaxis_title="Millones de USD",
+    xaxis=dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
+    template="plotly_white", font_family="Inter",
+    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+    height=420, margin=dict(b=100),
+    annotations=[dict(text=AUTOR, x=0, y=-0.3, xref="paper", yref="paper",
+        showarrow=False, font=dict(size=9, color="gray"), xanchor="left")],
+)
+fig.show()
 ```
 
 ```{python}
-grafico_linea(fees, "Fondo de Estabilización Económica y Social (FEES)", "Millones de USD",
-              color="rgb(39,174,96)", formato_y=",.0f", prefijo="$").show()
+# 2. OATP por composición
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=oatp["fecha"], y=oatp["valor"],
+    name="OATP Total", line=dict(color="#e74c3c", width=2)))
+fig.add_trace(go.Scatter(x=pesos["fecha"], y=pesos["valor"],
+    name="En pesos", line=dict(color="#f39c12", width=2)))
+fig.add_trace(go.Scatter(x=dolar["fecha"], y=dolar["valor"],
+    name="En dólares", line=dict(color="#2980b9", width=2)))
+fig.update_layout(
+    title="Otros Activos del Tesoro Público (OATP) por moneda (millones de USD)",
+    yaxis_title="Millones de USD",
+    xaxis=dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
+    template="plotly_white", font_family="Inter",
+    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+    height=420, margin=dict(b=100),
+    annotations=[dict(text=AUTOR, x=0, y=-0.3, xref="paper", yref="paper",
+        showarrow=False, font=dict(size=9, color="gray"), xanchor="left")],
+)
+fig.show()
 ```
 
 ```{python}
-grafico_linea(frp, "Fondo de Reserva de Pensiones (FRP)", "Millones de USD",
-              color="rgb(142,68,173)", formato_y=",.0f", prefijo="$").show()
+# 3. Fondos para educación
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=fondoeduc["fecha"], y=fondoeduc["valor"],
+    name="Fondo Educación", line=dict(color="#f39c12", width=2)))
+fig.add_trace(go.Scatter(x=fpe["fecha"], y=fpe["valor"],
+    name="FPE", line=dict(color="#e67e22", width=2)))
+fig.update_layout(
+    title="Fondos para Educación (millones de USD)",
+    yaxis_title="Millones de USD",
+    xaxis=dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
+    template="plotly_white", font_family="Inter",
+    legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+    height=420, margin=dict(b=100),
+    annotations=[dict(text=AUTOR, x=0, y=-0.3, xref="paper", yref="paper",
+        showarrow=False, font=dict(size=9, color="gray"), xanchor="left")],
+)
+fig.show()
 ```
 
 ```{python}
-grafico_linea(fondoeduc, "Fondo de Educación", "Millones de USD",
-              color="rgb(243,156,18)", formato_y=",.0f", prefijo="$").show()
+# 4. Fondo de Apoyo Regional
+grafico_linea(fapr, "Fondo de Apoyo a las Regiones (FAPR)", "Millones de USD",
+              color="rgb(22,160,133)", formato_y=",.0f", prefijo="$").show()
 ```
 
 ```{python}
-grafico_linea(tratamientoaltocosto, "Fondo de Tratamiento de Alto Costo", "Millones de USD",
-              color="rgb(231,76,60)", formato_y=",.0f", prefijo="$").show()
+# 5. Fondo para diagnósticos y tratamientos de alto costo
+grafico_linea(tratamientoaltocosto, "Fondo para Diagnósticos y Tratamientos de Alto Costo",
+              "Millones de USD", color="rgb(231,76,60)", formato_y=",.0f", prefijo="$").show()
 ```
