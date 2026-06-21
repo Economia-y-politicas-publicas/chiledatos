@@ -8,21 +8,23 @@ date: last-modified
 #| label: setup
 #| include: false
 
+import os
+import requests
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from datetime import datetime, timedelta
 
+# ── Datos CSV (deuda pública) ──────────────────────────────────────────────────
 url = "https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/finanzas_publicas.csv"
 
 df = pd.read_csv(url, sep=",", encoding="utf-8")
-
 df.columns = [
     "periodo", "deuda_bruta_gc", "deuda_neta_gc",
     "deuda_bruta_bc", "deuda_neta_bc",
     "deuda_bruta_sp", "deuda_neta_sp",
     "deuda_bruta_ep", "deuda_neta_ep",
 ]
-
 cols_numericas = [
     "deuda_bruta_gc", "deuda_neta_gc",
     "deuda_bruta_bc", "deuda_neta_bc",
@@ -33,78 +35,45 @@ df[cols_numericas] = df[cols_numericas].apply(pd.to_numeric, errors="coerce")
 df["fecha"] = pd.to_datetime(df["periodo"], format="%b.%Y", errors="coerce")
 df = df.dropna(subset=["fecha"]).sort_values("fecha")
 
-AUTOR = "Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile"
-
-def agregar_autor(fig):
-    fig.update_layout(
-        annotations=[dict(
-            text=AUTOR,
-            x=0, y=-0.15,
-            xref="paper", yref="paper",
-            showarrow=False,
-            font=dict(size=10, color="gray"),
-            xanchor="left",
-        )]
-    )
-    return fig
-```
-
-
-
-
-```{python}
-#| label: setup
-#| include: false
-
-import os
-import requests
-import pandas as pd
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-
-usuario = os.environ.get("BCENTRAL_USER")
+# ── API Banco Central (fondos soberanos) ───────────────────────────────────────
+usuario  = os.environ.get("BCENTRAL_USER")
 password = os.environ.get("BCENTRAL_PASS")
+URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
 
-URL_API = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
-
-def obtener_serie(codigo, dias=365):
-    hoy = datetime.today()
+def obtener_serie(codigo, dias=1095):
+    hoy    = datetime.today()
     inicio = (hoy - timedelta(days=dias)).strftime("%Y-%m-%d")
-    fin = hoy.strftime("%Y-%m-%d")
+    fin    = hoy.strftime("%Y-%m-%d")
     params = {
-        "user": usuario,
-        "pass": password,
-        "function": "GetSeries",
-        "timeseries": codigo,
-        "firstdate": inicio,
-        "lastdate": fin,
-        "format": "json",
+        "user": usuario, "pass": password,
+        "function": "GetSeries", "timeseries": codigo,
+        "firstdate": inicio, "lastdate": fin, "format": "json",
     }
     try:
-        r = requests.get(URL_API, params=params, timeout=10)
+        r    = requests.get(URL_API, params=params, timeout=10)
         data = r.json()
-        obs = data["Series"]["Obs"]
-        df = pd.DataFrame(obs)
-        col_fecha = "indexDateString" if "indexDateString" in df.columns else df.columns[0]
-        col_valor = "value" if "value" in df.columns else df.columns[1]
-        df["fecha"] = pd.to_datetime(df[col_fecha], format="%d-%m-%Y", errors="coerce")
-        df["valor"] = pd.to_numeric(df[col_valor], errors="coerce")
-        return df.dropna(subset=["valor"]).sort_values("fecha").reset_index(drop=True)
+        obs  = data["Series"]["Obs"]
+        df_  = pd.DataFrame(obs)
+        col_fecha = "indexDateString" if "indexDateString" in df_.columns else df_.columns[0]
+        col_valor = "value" if "value" in df_.columns else df_.columns[1]
+        df_["fecha"] = pd.to_datetime(df_[col_fecha], format="%d-%m-%Y", errors="coerce")
+        df_["valor"] = pd.to_numeric(df_[col_valor], errors="coerce")
+        return df_.dropna(subset=["valor"]).sort_values("fecha").reset_index(drop=True)
     except Exception as e:
         print(f"Error cargando {codigo}: {e}")
         return pd.DataFrame(columns=["fecha", "valor"])
 
-def grafico_linea(df, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo=""):
-    if df.empty:
+def grafico_linea(df_, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo=""):
+    if df_.empty:
         return go.Figure()
-    ultimo = df["valor"].iloc[-1]
-    fecha = df["fecha"].iloc[-1].strftime("%d/%m/%Y")
-    minimo = df["valor"].min()
-    maximo = df["valor"].max()
+    ultimo = df_["valor"].iloc[-1]
+    fecha  = df_["fecha"].iloc[-1].strftime("%d/%m/%Y")
+    minimo = df_["valor"].min()
+    maximo = df_["valor"].max()
     margen = (maximo - minimo) * 0.05
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=df["fecha"], y=df["valor"],
+        x=df_["fecha"], y=df_["valor"],
         mode="lines",
         line=dict(color=color, width=2),
         fill="tozeroy",
@@ -114,10 +83,10 @@ def grafico_linea(df, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo
     fig.update_layout(
         title=dict(text=f"{titulo} — Último: {prefijo}{ultimo:{formato_y}}{sufijo} ({fecha})", font=dict(size=15)),
         yaxis=dict(title=ytitle, tickformat=formato_y, tickprefix=prefijo, ticksuffix=sufijo, range=[minimo - margen, maximo + margen]),
-        xaxis=dict(dtick="M1", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
+        xaxis=dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10)),
         template="plotly_white",
         font_family="Inter",
-        height=380,
+        height=400,
         margin=dict(b=100, t=60),
         annotations=[dict(
             text="Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile",
@@ -127,70 +96,47 @@ def grafico_linea(df, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo
     )
     return fig
 
-def variacion(df):
-    if len(df) < 2:
-        return 0, "gray"
-    v = ((df["valor"].iloc[-1] - df["valor"].iloc[-2]) / df["valor"].iloc[-2]) * 100
-    color = "#2ecc71" if v >= 0 else "#e74c3c"
-    return v, color
+AUTOR = "Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile"
 
-ultima_actualizacion = datetime.today().strftime("%d/%m/%Y %H:%M")
+def agregar_autor(fig):
+    fig.update_layout(
+        annotations=[dict(
+            text=AUTOR, x=0, y=-0.15,
+            xref="paper", yref="paper",
+            showarrow=False,
+            font=dict(size=10, color="gray"),
+            xanchor="left",
+        )]
+    )
+    return fig
 
-fondossoberanos   = obtener_serie("F051.C19.STO.C.Z.USD.M")
-fees    = obtener_serie("F051.C17.STO.C.Z.USD.M")
-frp   = obtener_serie("F051.C15.STO.C.Z.USD.M")
-oatp  = obtener_serie("F051.M2.STO.C.Z.USD.M")
-pesos   = obtener_serie("F051.M21.STO.C.Z.USD.M")
-dolar = obtener_serie("F051.M22.STO.C.Z.USD.M")
-fondoeduc = obtener_serie("F051.C181.STO.C.Z.USD.M")
-fpe = obtener_serie("F051.C181.STO.C.Z.USD.M")
-fapr = obtener_serie("F051.M11.STO.C.Z.USD.M")
+# Cargar series fondos soberanos
+fondossoberanos      = obtener_serie("F051.C19.STO.C.Z.USD.M")
+fees                 = obtener_serie("F051.C17.STO.C.Z.USD.M")
+frp                  = obtener_serie("F051.C15.STO.C.Z.USD.M")
+oatp                 = obtener_serie("F051.M2.STO.C.Z.USD.M")
+pesos                = obtener_serie("F051.M21.STO.C.Z.USD.M")
+dolar                = obtener_serie("F051.M22.STO.C.Z.USD.M")
+fondoeduc            = obtener_serie("F051.C181.STO.C.Z.USD.M")
+fapr                 = obtener_serie("F051.M11.STO.C.Z.USD.M")
 tratamientoaltocosto = obtener_serie("F051.M12.STO.C.Z.USD.M")
-
-
 ```
 
-
-
-```{python}
-grafico_linea(fondossoberanos, "Activos consolidados totales (millones de dólares)", "Millones de dólares",
-              color="rgb(52,152,219)", formato_y=",.0f", prefijo="$").show()
-
-grafico_linea(fees, "Activos consolidados totales (millones de dólares)", "Millones de dólares",
-              color="rgb(52,152,219)", formato_y=",.0f", prefijo="$").show()
-
-```
-
-
-
-
-
-
-
-
-
-
-
+---
 
 ## 1. Gobierno Central
 
 ```{python}
 fig = go.Figure()
-fig.add_trace(go.Scatter(
-    x=df["fecha"], y=df["deuda_bruta_gc"],
-    name="Deuda bruta", line=dict(color="#e74c3c"),
-))
-fig.add_trace(go.Scatter(
-    x=df["fecha"], y=df["deuda_neta_gc"],
-    name="Deuda neta", line=dict(color="#2980b9"),
-))
+fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_bruta_gc"],
+    name="Deuda bruta", line=dict(color="#e74c3c")))
+fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_neta_gc"],
+    name="Deuda neta", line=dict(color="#2980b9")))
 fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
 fig.update_layout(
     title="Gobierno Central: deuda bruta y neta (% del PIB)",
-    yaxis_title="% del PIB",
-    xaxis_title="Período",
-    template="plotly_white",
-    font_family="Inter",
+    yaxis_title="% del PIB", xaxis_title="Período",
+    template="plotly_white", font_family="Inter",
     legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
     margin=dict(b=80),
 )
@@ -202,21 +148,15 @@ fig.show()
 
 ```{python}
 fig = go.Figure()
-fig.add_trace(go.Scatter(
-    x=df["fecha"], y=df["deuda_bruta_bc"],
-    name="Deuda bruta", line=dict(color="#e74c3c"),
-))
-fig.add_trace(go.Scatter(
-    x=df["fecha"], y=df["deuda_neta_bc"],
-    name="Deuda neta", line=dict(color="#2980b9"),
-))
+fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_bruta_bc"],
+    name="Deuda bruta", line=dict(color="#e74c3c")))
+fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_neta_bc"],
+    name="Deuda neta", line=dict(color="#2980b9")))
 fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
 fig.update_layout(
     title="Banco Central: deuda bruta y neta (% del PIB)",
-    yaxis_title="% del PIB",
-    xaxis_title="Período",
-    template="plotly_white",
-    font_family="Inter",
+    yaxis_title="% del PIB", xaxis_title="Período",
+    template="plotly_white", font_family="Inter",
     legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
     margin=dict(b=80),
 )
@@ -228,22 +168,16 @@ fig.show()
 
 ```{python}
 fig = go.Figure()
-fig.add_trace(go.Scatter(
-    x=df["fecha"], y=df["deuda_bruta_sp"],
+fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_bruta_sp"],
     name="Deuda bruta", line=dict(color="#e74c3c"),
-    fill="tozeroy", fillcolor="rgba(231,76,60,0.1)",
-))
-fig.add_trace(go.Scatter(
-    x=df["fecha"], y=df["deuda_neta_sp"],
-    name="Deuda neta", line=dict(color="#2980b9"),
-))
+    fill="tozeroy", fillcolor="rgba(231,76,60,0.1)"))
+fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_neta_sp"],
+    name="Deuda neta", line=dict(color="#2980b9")))
 fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
 fig.update_layout(
     title="Sector Público Consolidado: deuda bruta y neta (% del PIB)",
-    yaxis_title="% del PIB",
-    xaxis_title="Período",
-    template="plotly_white",
-    font_family="Inter",
+    yaxis_title="% del PIB", xaxis_title="Período",
+    template="plotly_white", font_family="Inter",
     legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
     margin=dict(b=80),
 )
@@ -255,24 +189,47 @@ fig.show()
 
 ```{python}
 fig = go.Figure()
-fig.add_trace(go.Scatter(
-    x=df["fecha"], y=df["deuda_bruta_ep"],
-    name="Deuda bruta", line=dict(color="#e74c3c"),
-))
-fig.add_trace(go.Scatter(
-    x=df["fecha"], y=df["deuda_neta_ep"],
-    name="Deuda neta", line=dict(color="#2980b9"),
-))
+fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_bruta_ep"],
+    name="Deuda bruta", line=dict(color="#e74c3c")))
+fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_neta_ep"],
+    name="Deuda neta", line=dict(color="#2980b9")))
 fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
 fig.update_layout(
     title="Empresas Públicas: deuda bruta y neta (% del PIB)",
-    yaxis_title="% del PIB",
-    xaxis_title="Período",
-    template="plotly_white",
-    font_family="Inter",
+    yaxis_title="% del PIB", xaxis_title="Período",
+    template="plotly_white", font_family="Inter",
     legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
     margin=dict(b=80),
 )
 agregar_autor(fig)
 fig.show()
+```
+
+---
+
+## 5. Fondos Soberanos
+
+```{python}
+grafico_linea(fondossoberanos, "Activos consolidados totales", "Millones de USD",
+              color="rgb(52,152,219)", formato_y=",.0f", prefijo="$").show()
+```
+
+```{python}
+grafico_linea(fees, "Fondo de Estabilización Económica y Social (FEES)", "Millones de USD",
+              color="rgb(39,174,96)", formato_y=",.0f", prefijo="$").show()
+```
+
+```{python}
+grafico_linea(frp, "Fondo de Reserva de Pensiones (FRP)", "Millones de USD",
+              color="rgb(142,68,173)", formato_y=",.0f", prefijo="$").show()
+```
+
+```{python}
+grafico_linea(fondoeduc, "Fondo de Educación", "Millones de USD",
+              color="rgb(243,156,18)", formato_y=",.0f", prefijo="$").show()
+```
+
+```{python}
+grafico_linea(tratamientoaltocosto, "Fondo de Tratamiento de Alto Costo", "Millones de USD",
+              color="rgb(231,76,60)", formato_y=",.0f", prefijo="$").show()
 ```
