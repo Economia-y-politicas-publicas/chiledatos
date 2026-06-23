@@ -139,7 +139,7 @@ En este ejemplo, la serie presenta una tendencia creciente, una estacionalidad q
 ```{python}
 #| echo: false
 from IPython.display import Image
-Image("../imagenes/consumo/ciclo_tendencia_estacionalidad.png", width=800)
+Image("../imagenes/economia/ciclo_tendencia_estacionalidad.png", width=800)
 ```
 
 
