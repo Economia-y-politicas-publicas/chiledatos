@@ -125,3 +125,17 @@ fig.show()
 | Estallido social | 2019 | 0.64% |
 | Pandemia COVID-19 | 2020 | -6.14% |
 | Rebote post-pandemia | 2021 | +11.34% |
+
+---
+
+## Análisis del ciclo económico de Chile
+
+La **duración promedio del desempleo** mide cuántos meses tarda en promedio una persona desempleada en encontrar trabajo.
+
+```{python}
+#| echo: false
+from IPython.display import Image
+Image("../imagenes/consumo/consumototal.png", width=800)
+```
+
+---
