@@ -142,12 +142,12 @@ from IPython.display import Image
 Image("../imagenes/economia/ciclo_tendencia_estacionalidad.png", width=800)
 ```
 
-
+---
 **Los siguientes gráficos muestran diversas comparaciones del ciclo económico (PIB) y las componentes del gasto del PIB.** 
 
 Para ello se utilizó las series de gasto desestacionalizadas y transformadas en logaritmos.
 
-La siguiente imagen muestra el componente ciclico del PIB y del Consumo Total (*Hogares e IPSFL y Gobierno). Esto representa desviación porcentuales respecto a su tendencia. Cabe mencionar que el Producto y el Consumo se mueven a la par hasta la crisis del Covid-19 durante 2020, los IFes y los 3 retiros de pensiones presionaron el Consumo Total muy por sobre su tendencia.
+La siguiente imagen muestra el componente ciclico del PIB y del Consumo Total (**Hogares e IPSFL y Gobierno**). Esto representa desviación porcentuales respecto a su tendencia. Cabe mencionar que el Producto y el Consumo se mueven a la par hasta la crisis del Covid-19 durante 2020, los IFes y los 3 retiros de pensiones presionaron el Consumo Total muy por sobre su tendencia.
 
 ```{python}
 #| echo: false
