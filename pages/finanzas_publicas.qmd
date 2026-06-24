@@ -69,7 +69,7 @@ EJE_X = dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10
 def agregar_autor(fig):
     fig.update_layout(
         annotations=[dict(
-            text=AUTOR, x=0, y=-0.18,
+            text=AUTOR, x=0, y=-1.18,
             xref="paper", yref="paper",
             showarrow=False,
             font=dict(size=10, color="gray"),
@@ -203,17 +203,16 @@ fig.show()
 ```{python}
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_bruta_sp"],
-    name="Deuda bruta", line=dict(color="#e74c3c", width=2.5),
-    fill="tozeroy", fillcolor="rgba(231,76,60,0.08)"))
+    name="Deuda bruta", line=dict(color="#e74c3c", width=2.5))
 fig.add_trace(go.Scatter(x=df["fecha"], y=df["deuda_neta_sp"],
     name="Deuda neta", line=dict(color="#2980b9", width=2, dash="dash")))
-fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.4)
+fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.6)
 fig.update_layout(
     title="Sector Público Consolidado: deuda bruta y neta (% del PIB)",
     yaxis=dict(title="% del PIB", tickformat=".1f"),
     xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),
     template="plotly_white", font_family="Inter",
-    legend=dict(orientation="h", y=-0.25, x=0.5, xanchor="center"),
+    legend=dict(orientation="h", y=-1.25, x=0.5, xanchor="center"),
     height=430, margin=dict(b=110),
 )
 agregar_autor(fig)
@@ -234,7 +233,7 @@ fig.update_layout(
     yaxis=dict(title="% del PIB", tickformat=".1f"),
     xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),
     template="plotly_white", font_family="Inter",
-    legend=dict(orientation="h", y=-0.25, x=0.5, xanchor="center"),
+    legend=dict(orientation="h", y=-1.25, x=0.5, xanchor="center"),
     height=430, margin=dict(b=110),
 )
 agregar_autor(fig)
