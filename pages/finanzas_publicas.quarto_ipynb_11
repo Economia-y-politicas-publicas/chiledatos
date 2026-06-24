@@ -1,0 +1,936 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "0dd8f5db",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "title: \"Finanzas Públicas\"\n",
+    "subtitle: \"Deuda del Sector Público de Chile como % del PIB\"\n",
+    "date: last-modified\n",
+    "---"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "setup",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error cargando F051.C19.STO.C.Z.USD.M: Expecting value: line 1 column 1 (char 0)\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error cargando F051.C17.STO.C.Z.USD.M: Expecting value: line 1 column 1 (char 0)\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error cargando F051.C15.STO.C.Z.USD.M: Expecting value: line 1 column 1 (char 0)\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error cargando F051.M2.STO.C.Z.USD.M: Expecting value: line 1 column 1 (char 0)\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error cargando F051.M21.STO.C.Z.USD.M: Expecting value: line 1 column 1 (char 0)\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error cargando F051.M22.STO.C.Z.USD.M: Expecting value: line 1 column 1 (char 0)\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error cargando F051.C181.STO.C.Z.USD.M: Expecting value: line 1 column 1 (char 0)\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error cargando F051.M11.STO.C.Z.USD.M: Expecting value: line 1 column 1 (char 0)\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error cargando F051.M12.STO.C.Z.USD.M: Expecting value: line 1 column 1 (char 0)\n"
+     ]
+    }
+   ],
+   "source": [
+    "#| label: setup\n",
+    "#| include: false\n",
+    "\n",
+    "import os\n",
+    "import requests\n",
+    "import pandas as pd\n",
+    "import plotly.express as px\n",
+    "import plotly.graph_objects as go\n",
+    "from datetime import datetime, timedelta\n",
+    "\n",
+    "# ── Datos CSV (deuda pública) ──────────────────────────────────────────────────\n",
+    "url = \"https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/finanzas_publicas.csv\"\n",
+    "\n",
+    "df = pd.read_csv(url, sep=\",\", encoding=\"utf-8\")\n",
+    "df.columns = [\n",
+    "    \"periodo\", \"deuda_bruta_gc\", \"deuda_neta_gc\",\n",
+    "    \"deuda_bruta_bc\", \"deuda_neta_bc\",\n",
+    "    \"deuda_bruta_sp\", \"deuda_neta_sp\",\n",
+    "    \"deuda_bruta_ep\", \"deuda_neta_ep\",\n",
+    "]\n",
+    "cols_numericas = [\n",
+    "    \"deuda_bruta_gc\", \"deuda_neta_gc\",\n",
+    "    \"deuda_bruta_bc\", \"deuda_neta_bc\",\n",
+    "    \"deuda_bruta_sp\", \"deuda_neta_sp\",\n",
+    "    \"deuda_bruta_ep\", \"deuda_neta_ep\",\n",
+    "]\n",
+    "df[cols_numericas] = df[cols_numericas].apply(pd.to_numeric, errors=\"coerce\")\n",
+    "df[\"fecha\"] = pd.to_datetime(df[\"periodo\"], format=\"%b.%Y\", errors=\"coerce\")\n",
+    "df = df.dropna(subset=[\"fecha\"]).sort_values(\"fecha\")\n",
+    "\n",
+    "# ── API Banco Central (fondos soberanos) ───────────────────────────────────────\n",
+    "usuario  = os.environ.get(\"BCENTRAL_USER\")\n",
+    "password = os.environ.get(\"BCENTRAL_PASS\")\n",
+    "URL_API  = \"https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx\"\n",
+    "\n",
+    "def obtener_serie(codigo, dias=1095):\n",
+    "    hoy    = datetime.today()\n",
+    "    inicio = (hoy - timedelta(days=dias)).strftime(\"%Y-%m-%d\")\n",
+    "    fin    = hoy.strftime(\"%Y-%m-%d\")\n",
+    "    params = {\n",
+    "        \"user\": usuario, \"pass\": password,\n",
+    "        \"function\": \"GetSeries\", \"timeseries\": codigo,\n",
+    "        \"firstdate\": inicio, \"lastdate\": fin, \"format\": \"json\",\n",
+    "    }\n",
+    "    try:\n",
+    "        r    = requests.get(URL_API, params=params, timeout=10)\n",
+    "        data = r.json()\n",
+    "        obs  = data[\"Series\"][\"Obs\"]\n",
+    "        df_  = pd.DataFrame(obs)\n",
+    "        col_fecha = \"indexDateString\" if \"indexDateString\" in df_.columns else df_.columns[0]\n",
+    "        col_valor = \"value\" if \"value\" in df_.columns else df_.columns[1]\n",
+    "        df_[\"fecha\"] = pd.to_datetime(df_[col_fecha], format=\"%d-%m-%Y\", errors=\"coerce\")\n",
+    "        df_[\"valor\"] = pd.to_numeric(df_[col_valor], errors=\"coerce\")\n",
+    "        return df_.dropna(subset=[\"valor\"]).sort_values(\"fecha\").reset_index(drop=True)\n",
+    "    except Exception as e:\n",
+    "        print(f\"Error cargando {codigo}: {e}\")\n",
+    "        return pd.DataFrame(columns=[\"fecha\", \"valor\"])\n",
+    "\n",
+    "AUTOR = \"Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile\"\n",
+    "EJE_X = dict(dtick=\"M6\", tickformat=\"%b %Y\", tickangle=45, tickfont=dict(size=10))\n",
+    "\n",
+    "def agregar_autor(fig):\n",
+    "    fig.update_layout(\n",
+    "        annotations=[dict(\n",
+    "            text=AUTOR, x=0, y=-1.18,\n",
+    "            xref=\"paper\", yref=\"paper\",\n",
+    "            showarrow=False,\n",
+    "            font=dict(size=10, color=\"gray\"),\n",
+    "            xanchor=\"left\",\n",
+    "        )]\n",
+    "    )\n",
+    "    return fig\n",
+    "\n",
+    "def grafico_linea(df_, titulo, ytitle, color, formato_y=\",.0f\", prefijo=\"\", sufijo=\"\"):\n",
+    "    if df_.empty:\n",
+    "        return go.Figure()\n",
+    "    ultimo = df_[\"valor\"].iloc[-1]\n",
+    "    fecha  = df_[\"fecha\"].iloc[-1].strftime(\"%d/%m/%Y\")\n",
+    "    minimo = df_[\"valor\"].min()\n",
+    "    maximo = df_[\"valor\"].max()\n",
+    "    margen = (maximo - minimo) * 0.05\n",
+    "    idx_max = df_[\"valor\"].argmax()\n",
+    "\n",
+    "    fig = go.Figure()\n",
+    "    fig.add_trace(go.Scatter(\n",
+    "        x=df_[\"fecha\"], y=df_[\"valor\"],\n",
+    "        mode=\"lines\",\n",
+    "        line=dict(color=color, width=2),\n",
+    "        fill=\"tozeroy\",\n",
+    "        fillcolor=color.replace(\")\", \",0.1)\").replace(\"rgb\", \"rgba\"),\n",
+    "        hovertemplate=f\"<b>%{{x|%b %Y}}</b><br>{prefijo}%{{y:{formato_y}}}{sufijo}<extra></extra>\",\n",
+    "    ))\n",
+    "    fig.update_layout(\n",
+    "        title=dict(text=f\"{titulo} — Último: {prefijo}{ultimo:{formato_y}}{sufijo} ({fecha})\", font=dict(size=15)),\n",
+    "        yaxis=dict(title=ytitle, tickformat=formato_y, tickprefix=prefijo,\n",
+    "                   range=[max(0, minimo - margen), maximo + margen]),\n",
+    "        xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),\n",
+    "        template=\"plotly_white\",\n",
+    "        font_family=\"Inter\",\n",
+    "        height=420,\n",
+    "        margin=dict(b=100, t=60),\n",
+    "        annotations=[dict(\n",
+    "            text=AUTOR, x=0, y=-0.28, xref=\"paper\", yref=\"paper\",\n",
+    "            showarrow=False, font=dict(size=9, color=\"gray\"), xanchor=\"left\",\n",
+    "        )],\n",
+    "    )\n",
+    "    return fig\n",
+    "\n",
+    "def grafico_multi(trazas, titulo, ytitle):\n",
+    "    \"\"\"trazas = lista de (df, nombre, color, ancho, dash)\"\"\"\n",
+    "    fig = go.Figure()\n",
+    "    for df_, nombre, color, ancho, dash in trazas:\n",
+    "        if df_.empty:\n",
+    "            continue\n",
+    "        fig.add_trace(go.Scatter(\n",
+    "            x=df_[\"fecha\"], y=df_[\"valor\"],\n",
+    "            name=nombre,\n",
+    "            mode=\"lines\",\n",
+    "            line=dict(color=color, width=ancho, dash=dash),\n",
+    "            hovertemplate=f\"<b>{nombre}</b><br>%{{x|%b %Y}}<br>${{%{{y:,.0f}}}}M<extra></extra>\",\n",
+    "        ))\n",
+    "    fig.update_layout(\n",
+    "        title=dict(text=titulo, font=dict(size=15)),\n",
+    "        yaxis=dict(title=ytitle, tickformat=\",.0f\"),\n",
+    "        xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),\n",
+    "        template=\"plotly_white\",\n",
+    "        font_family=\"Inter\",\n",
+    "        legend=dict(orientation=\"h\", y=-0.25, x=0.5, xanchor=\"center\"),\n",
+    "        height=450,\n",
+    "        margin=dict(b=120, t=60),\n",
+    "        annotations=[dict(\n",
+    "            text=AUTOR, x=0, y=-0.32, xref=\"paper\", yref=\"paper\",\n",
+    "            showarrow=False, font=dict(size=9, color=\"gray\"), xanchor=\"left\",\n",
+    "        )],\n",
+    "    )\n",
+    "    return fig\n",
+    "\n",
+    "# Cargar series fondos soberanos\n",
+    "fondossoberanos      = obtener_serie(\"F051.C19.STO.C.Z.USD.M\")\n",
+    "fees                 = obtener_serie(\"F051.C17.STO.C.Z.USD.M\")\n",
+    "frp                  = obtener_serie(\"F051.C15.STO.C.Z.USD.M\")\n",
+    "oatp                 = obtener_serie(\"F051.M2.STO.C.Z.USD.M\")\n",
+    "pesos                = obtener_serie(\"F051.M21.STO.C.Z.USD.M\")\n",
+    "dolar                = obtener_serie(\"F051.M22.STO.C.Z.USD.M\")\n",
+    "fondoeduc            = obtener_serie(\"F051.C181.STO.C.Z.USD.M\")\n",
+    "fapr                 = obtener_serie(\"F051.M11.STO.C.Z.USD.M\")\n",
+    "tratamientoaltocosto = obtener_serie(\"F051.M12.STO.C.Z.USD.M\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0922c020",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "\n",
+    "## 1. Gobierno Central"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "5fd0bbe9",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "        <script type=\"text/javascript\">\n",
+       "        window.PlotlyConfig = {MathJaxConfig: 'local'};\n",
+       "        if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}\n",
+       "        </script>\n",
+       "        <script type=\"module\">import \"https://cdn.plot.ly/plotly-3.3.0.min\"</script>\n",
+       "        "
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div>            <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG\"></script><script type=\"text/javascript\">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}</script>                <script type=\"text/javascript\">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>\n",
+       "        <script charset=\"utf-8\" src=\"https://cdn.plot.ly/plotly-3.3.0.min.js\" integrity=\"sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=\" crossorigin=\"anonymous\"></script>                <div id=\"e2349962-0541-4226-a292-536658ed1bed\" class=\"plotly-graph-div\" style=\"height:430px; width:100%;\"></div>            <script type=\"text/javascript\">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(\"e2349962-0541-4226-a292-536658ed1bed\")) {                    Plotly.newPlot(                        \"e2349962-0541-4226-a292-536658ed1bed\",                        [{\"line\":{\"color\":\"#e74c3c\",\"width\":2.5},\"name\":\"Deuda bruta\",\"x\":[\"2006-03-01T00:00:00.000000000\",\"2006-06-01T00:00:00.000000000\",\"2006-09-01T00:00:00.000000000\",\"2007-03-01T00:00:00.000000000\",\"2007-06-01T00:00:00.000000000\",\"2007-09-01T00:00:00.000000000\",\"2008-03-01T00:00:00.000000000\",\"2008-06-01T00:00:00.000000000\",\"2008-09-01T00:00:00.000000000\",\"2009-03-01T00:00:00.000000000\",\"2009-06-01T00:00:00.000000000\",\"2009-09-01T00:00:00.000000000\",\"2010-03-01T00:00:00.000000000\",\"2010-06-01T00:00:00.000000000\",\"2010-09-01T00:00:00.000000000\",\"2011-03-01T00:00:00.000000000\",\"2011-06-01T00:00:00.000000000\",\"2011-09-01T00:00:00.000000000\",\"2012-03-01T00:00:00.000000000\",\"2012-06-01T00:00:00.000000000\",\"2012-09-01T00:00:00.000000000\",\"2013-03-01T00:00:00.000000000\",\"2013-06-01T00:00:00.000000000\",\"2013-09-01T00:00:00.000000000\",\"2014-03-01T00:00:00.000000000\",\"2014-06-01T00:00:00.000000000\",\"2014-09-01T00:00:00.000000000\",\"2015-03-01T00:00:00.000000000\",\"2015-06-01T00:00:00.000000000\",\"2015-09-01T00:00:00.000000000\",\"2016-03-01T00:00:00.000000000\",\"2016-06-01T00:00:00.000000000\",\"2016-09-01T00:00:00.000000000\",\"2017-03-01T00:00:00.000000000\",\"2017-06-01T00:00:00.000000000\",\"2017-09-01T00:00:00.000000000\",\"2018-03-01T00:00:00.000000000\",\"2018-06-01T00:00:00.000000000\",\"2018-09-01T00:00:00.000000000\",\"2019-03-01T00:00:00.000000000\",\"2019-06-01T00:00:00.000000000\",\"2019-09-01T00:00:00.000000000\",\"2020-03-01T00:00:00.000000000\",\"2020-06-01T00:00:00.000000000\",\"2020-09-01T00:00:00.000000000\",\"2021-03-01T00:00:00.000000000\",\"2021-06-01T00:00:00.000000000\",\"2021-09-01T00:00:00.000000000\",\"2022-03-01T00:00:00.000000000\",\"2022-06-01T00:00:00.000000000\",\"2022-09-01T00:00:00.000000000\",\"2023-03-01T00:00:00.000000000\",\"2023-06-01T00:00:00.000000000\",\"2023-09-01T00:00:00.000000000\",\"2024-03-01T00:00:00.000000000\",\"2024-06-01T00:00:00.000000000\",\"2024-09-01T00:00:00.000000000\",\"2025-03-01T00:00:00.000000000\",\"2025-06-01T00:00:00.000000000\",\"2025-09-01T00:00:00.000000000\"],\"y\":{\"dtype\":\"f8\",\"bdata\":\"cT0K16NwGUAzMzMzMzMXQDMzMzMzMxVAw\\u002fUoXI\\u002fCE0CF61G4HoUTQPYoXI\\u002fC9RBA9ihcj8L1CkBcj8L1KFwNQOF6FK5H4RBAPQrXo3A9E0CPwvUoXI8SQBSuR+F6FBZAAAAAAAAAGkBmZmZmZmYcQPYoXI\\u002fCdSBA7FG4HoXrIUA9CtejcL0iQKRwPQrXIyVApHA9CtcjJkB7FK5H4fomQClcj8L1qCZA7FG4HoXrJkCamZmZmRkoQLgehetROClAcT0K16NwKUBxPQrXo\\u002fAqQMP1KFyPQitAUrgehetRLEDNzMzMzAwwQKRwPQrX4zBAuB6F61H4MUD2KFyPwnU0QJqZmZmZ2TRAj8L1KFxPNUDXo3A9Cpc3QLgehetReDdAFK5H4XqUN0CF61G4HsU3QBSuR+F6FDlAFK5H4XrUOUA9CtejcD07QNejcD0K1ztAKVyPwvXoPUDsUbgehUtAQI\\u002fC9Shcj0BA4XoUrkdhQEAK16NwPYpAQArXo3A9CkJAmpmZmZkZQkBxPQrXo5BDQD0K16NwnUNApHA9CtcDQkBSuB6F63FCQOF6FK5HYUNASOF6FK7HREApXI\\u002fC9chEQM3MzMzMLEVA16NwPQrXREBmZmZmZmZFQAAAAAAAoEVA\"},\"type\":\"scatter\"},{\"line\":{\"color\":\"#2980b9\",\"dash\":\"dash\",\"width\":2},\"name\":\"Deuda neta\",\"x\":[\"2006-03-01T00:00:00.000000000\",\"2006-06-01T00:00:00.000000000\",\"2006-09-01T00:00:00.000000000\",\"2007-03-01T00:00:00.000000000\",\"2007-06-01T00:00:00.000000000\",\"2007-09-01T00:00:00.000000000\",\"2008-03-01T00:00:00.000000000\",\"2008-06-01T00:00:00.000000000\",\"2008-09-01T00:00:00.000000000\",\"2009-03-01T00:00:00.000000000\",\"2009-06-01T00:00:00.000000000\",\"2009-09-01T00:00:00.000000000\",\"2010-03-01T00:00:00.000000000\",\"2010-06-01T00:00:00.000000000\",\"2010-09-01T00:00:00.000000000\",\"2011-03-01T00:00:00.000000000\",\"2011-06-01T00:00:00.000000000\",\"2011-09-01T00:00:00.000000000\",\"2012-03-01T00:00:00.000000000\",\"2012-06-01T00:00:00.000000000\",\"2012-09-01T00:00:00.000000000\",\"2013-03-01T00:00:00.000000000\",\"2013-06-01T00:00:00.000000000\",\"2013-09-01T00:00:00.000000000\",\"2014-03-01T00:00:00.000000000\",\"2014-06-01T00:00:00.000000000\",\"2014-09-01T00:00:00.000000000\",\"2015-03-01T00:00:00.000000000\",\"2015-06-01T00:00:00.000000000\",\"2015-09-01T00:00:00.000000000\",\"2016-03-01T00:00:00.000000000\",\"2016-06-01T00:00:00.000000000\",\"2016-09-01T00:00:00.000000000\",\"2017-03-01T00:00:00.000000000\",\"2017-06-01T00:00:00.000000000\",\"2017-09-01T00:00:00.000000000\",\"2018-03-01T00:00:00.000000000\",\"2018-06-01T00:00:00.000000000\",\"2018-09-01T00:00:00.000000000\",\"2019-03-01T00:00:00.000000000\",\"2019-06-01T00:00:00.000000000\",\"2019-09-01T00:00:00.000000000\",\"2020-03-01T00:00:00.000000000\",\"2020-06-01T00:00:00.000000000\",\"2020-09-01T00:00:00.000000000\",\"2021-03-01T00:00:00.000000000\",\"2021-06-01T00:00:00.000000000\",\"2021-09-01T00:00:00.000000000\",\"2022-03-01T00:00:00.000000000\",\"2022-06-01T00:00:00.000000000\",\"2022-09-01T00:00:00.000000000\",\"2023-03-01T00:00:00.000000000\",\"2023-06-01T00:00:00.000000000\",\"2023-09-01T00:00:00.000000000\",\"2024-03-01T00:00:00.000000000\",\"2024-06-01T00:00:00.000000000\",\"2024-09-01T00:00:00.000000000\",\"2025-03-01T00:00:00.000000000\",\"2025-06-01T00:00:00.000000000\",\"2025-09-01T00:00:00.000000000\"],\"y\":{\"dtype\":\"f8\",\"bdata\":\"ZmZmZmZm+r8AAAAAAAAOwB+F61G4HhjA4XoUrkfhIMBSuB6F61ElwArXo3A9iijAPQrXo3A9LMB7FK5H4XowwFyPwvUo3DHAuB6F61E4McAAAAAAAAAswKRwPQrXoynAKVyPwvWoI8CF61G4HoUkwArXo3A9CiHAFK5H4XoUH8DsUbgehWsgwLgehetRuCPAAAAAAAAAIcCamZmZmZkiwHE9CtejcB\\u002fAFK5H4XoUG8CF61G4HoUbwM3MzMzMzBrA4XoUrkfhGMAUrkfhehQXwKRwPQrXoxfAcT0K16NwEcBSuB6F61EOwAAAAAAAABPA7FG4HoXrAcAUrkfhehQKwFK4HoXrUfC\\u002f4XoUrkfh8j9cj8L1KFzzP0jhehSuRwVACtejcD0KFEB7FK5H4XoSQLgehetRuBRAXI\\u002fC9ShcF0BxPQrXo3AYQB+F61G4HhpAj8L1KFyPFUC4HoXrUbgfQB+F61G4HidAKVyPwvUoLECkcD0K1yMvQLgehetRODJAMzMzMzOzM0BI4XoUrkcyQPYoXI\\u002fCdTNAw\\u002fUoXI9CNEBmZmZmZqY0QOxRuB6FKzZAAAAAAACAOEA9CtejcP04QDMzMzMz8zpAUrgeheuROkDNzMzMzMw6QM3MzMzMTDtA\"},\"type\":\"scatter\"}],                        {\"template\":{\"data\":{\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"choropleth\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"choropleth\"}],\"contourcarpet\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"contourcarpet\"}],\"contour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"contour\"}],\"heatmap\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"heatmap\"}],\"histogram2dcontour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2dcontour\"}],\"histogram2d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2d\"}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"mesh3d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"mesh3d\"}],\"parcoords\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"parcoords\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}],\"scatter3d\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatter3d\"}],\"scattercarpet\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattercarpet\"}],\"scattergeo\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergeo\"}],\"scattergl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergl\"}],\"scattermapbox\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermapbox\"}],\"scattermap\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermap\"}],\"scatterpolargl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolargl\"}],\"scatterpolar\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolar\"}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"scatterternary\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterternary\"}],\"surface\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"surface\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}]},\"layout\":{\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"autotypenumbers\":\"strict\",\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]],\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]},\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"geo\":{\"bgcolor\":\"white\",\"lakecolor\":\"white\",\"landcolor\":\"white\",\"showlakes\":true,\"showland\":true,\"subunitcolor\":\"#C8D4E3\"},\"hoverlabel\":{\"align\":\"left\"},\"hovermode\":\"closest\",\"mapbox\":{\"style\":\"light\"},\"margin\":{\"b\":0,\"l\":0,\"r\":0,\"t\":30},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"white\",\"polar\":{\"angularaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"radialaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"}},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"yaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"zaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"ternary\":{\"aaxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"caxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"}},\"title\":{\"x\":0.05},\"xaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2},\"yaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2}}},\"shapes\":[{\"line\":{\"color\":\"gray\",\"dash\":\"dot\"},\"opacity\":0.4,\"type\":\"line\",\"x0\":0,\"x1\":1,\"xref\":\"x domain\",\"y0\":0,\"y1\":0,\"yref\":\"y\"}],\"yaxis\":{\"title\":{\"text\":\"% del PIB\"},\"tickformat\":\".1f\"},\"xaxis\":{\"tickfont\":{\"size\":10},\"rangeslider\":{\"visible\":true,\"thickness\":0.05},\"dtick\":\"M6\",\"tickformat\":\"%b %Y\",\"tickangle\":45},\"font\":{\"family\":\"Inter\"},\"legend\":{\"orientation\":\"h\",\"y\":-0.25,\"x\":0.5,\"xanchor\":\"center\"},\"margin\":{\"b\":110},\"title\":{\"text\":\"Gobierno Central: deuda bruta y neta (% del PIB)\"},\"height\":430,\"annotations\":[{\"font\":{\"color\":\"gray\",\"size\":10},\"showarrow\":false,\"text\":\"Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile\",\"x\":0,\"xanchor\":\"left\",\"xref\":\"paper\",\"y\":-1.18,\"yref\":\"paper\"}]},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('e2349962-0541-4226-a292-536658ed1bed');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "fig = go.Figure()\n",
+    "fig.add_trace(go.Scatter(x=df[\"fecha\"], y=df[\"deuda_bruta_gc\"],\n",
+    "    name=\"Deuda bruta\", line=dict(color=\"#e74c3c\", width=2.5)))\n",
+    "fig.add_trace(go.Scatter(x=df[\"fecha\"], y=df[\"deuda_neta_gc\"],\n",
+    "    name=\"Deuda neta\", line=dict(color=\"#2980b9\", width=2, dash=\"dash\")))\n",
+    "fig.add_hline(y=0, line_dash=\"dot\", line_color=\"gray\", opacity=0.4)\n",
+    "fig.update_layout(\n",
+    "    title=\"Gobierno Central: deuda bruta y neta (% del PIB)\",\n",
+    "    yaxis=dict(title=\"% del PIB\", tickformat=\".1f\"),\n",
+    "    xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),\n",
+    "    template=\"plotly_white\", font_family=\"Inter\",\n",
+    "    legend=dict(orientation=\"h\", y=-0.25, x=0.5, xanchor=\"center\"),\n",
+    "    height=430, margin=dict(b=110),\n",
+    ")\n",
+    "agregar_autor(fig)\n",
+    "fig.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "54b5def2",
+   "metadata": {},
+   "source": [
+    "## 2. Banco Central"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "5c70beab",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>            <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG\"></script><script type=\"text/javascript\">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}</script>                <script type=\"text/javascript\">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>\n",
+       "        <script charset=\"utf-8\" src=\"https://cdn.plot.ly/plotly-3.3.0.min.js\" integrity=\"sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=\" crossorigin=\"anonymous\"></script>                <div id=\"ab3014b1-8a3e-4d47-8437-c93220715e5f\" class=\"plotly-graph-div\" style=\"height:430px; width:100%;\"></div>            <script type=\"text/javascript\">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(\"ab3014b1-8a3e-4d47-8437-c93220715e5f\")) {                    Plotly.newPlot(                        \"ab3014b1-8a3e-4d47-8437-c93220715e5f\",                        [{\"line\":{\"color\":\"#e74c3c\",\"width\":2.5},\"name\":\"Deuda bruta\",\"x\":[\"2006-03-01T00:00:00.000000000\",\"2006-06-01T00:00:00.000000000\",\"2006-09-01T00:00:00.000000000\",\"2007-03-01T00:00:00.000000000\",\"2007-06-01T00:00:00.000000000\",\"2007-09-01T00:00:00.000000000\",\"2008-03-01T00:00:00.000000000\",\"2008-06-01T00:00:00.000000000\",\"2008-09-01T00:00:00.000000000\",\"2009-03-01T00:00:00.000000000\",\"2009-06-01T00:00:00.000000000\",\"2009-09-01T00:00:00.000000000\",\"2010-03-01T00:00:00.000000000\",\"2010-06-01T00:00:00.000000000\",\"2010-09-01T00:00:00.000000000\",\"2011-03-01T00:00:00.000000000\",\"2011-06-01T00:00:00.000000000\",\"2011-09-01T00:00:00.000000000\",\"2012-03-01T00:00:00.000000000\",\"2012-06-01T00:00:00.000000000\",\"2012-09-01T00:00:00.000000000\",\"2013-03-01T00:00:00.000000000\",\"2013-06-01T00:00:00.000000000\",\"2013-09-01T00:00:00.000000000\",\"2014-03-01T00:00:00.000000000\",\"2014-06-01T00:00:00.000000000\",\"2014-09-01T00:00:00.000000000\",\"2015-03-01T00:00:00.000000000\",\"2015-06-01T00:00:00.000000000\",\"2015-09-01T00:00:00.000000000\",\"2016-03-01T00:00:00.000000000\",\"2016-06-01T00:00:00.000000000\",\"2016-09-01T00:00:00.000000000\",\"2017-03-01T00:00:00.000000000\",\"2017-06-01T00:00:00.000000000\",\"2017-09-01T00:00:00.000000000\",\"2018-03-01T00:00:00.000000000\",\"2018-06-01T00:00:00.000000000\",\"2018-09-01T00:00:00.000000000\",\"2019-03-01T00:00:00.000000000\",\"2019-06-01T00:00:00.000000000\",\"2019-09-01T00:00:00.000000000\",\"2020-03-01T00:00:00.000000000\",\"2020-06-01T00:00:00.000000000\",\"2020-09-01T00:00:00.000000000\",\"2021-03-01T00:00:00.000000000\",\"2021-06-01T00:00:00.000000000\",\"2021-09-01T00:00:00.000000000\",\"2022-03-01T00:00:00.000000000\",\"2022-06-01T00:00:00.000000000\",\"2022-09-01T00:00:00.000000000\",\"2023-03-01T00:00:00.000000000\",\"2023-06-01T00:00:00.000000000\",\"2023-09-01T00:00:00.000000000\",\"2024-03-01T00:00:00.000000000\",\"2024-06-01T00:00:00.000000000\",\"2024-09-01T00:00:00.000000000\",\"2025-03-01T00:00:00.000000000\",\"2025-06-01T00:00:00.000000000\",\"2025-09-01T00:00:00.000000000\"],\"y\":{\"dtype\":\"f8\",\"bdata\":\"7FG4HoVrMUA9CtejcL0wQIXrUbgeBS9ApHA9CtejKEDsUbgehWsqQAAAAAAAACZAmpmZmZmZI0CkcD0K1yMlQNejcD0K1ytAw\\u002fUoXI9CK0A9CtejcD0qQGZmZmZm5i1AXI\\u002fC9ShcLkDXo3A9ClcqQDMzMzMzsyZArkfhehQuKUD2KFyPwvUpQAAAAAAAgCxA9ihcj8J1LUAUrkfhehQuQMP1KFyPQi1AAAAAAACAK0A9CtejcD0sQM3MzMzMTC1AmpmZmZmZK0DD9Shcj0IrQD0K16NwvSpAAAAAAAAAKkDhehSuR2EpQFyPwvUo3ClAj8L1KFwPKUAfhetRuB4pQHE9CtejcChAmpmZmZmZJ0BI4XoUrkcnQAAAAAAAgCVAH4XrUbieJEDhehSuR+EjQM3MzMzMTCNAXI\\u002fC9ShcI0DNzMzMzMwiQEjhehSuRyJA16NwPQrXJUDNzMzMzAwyQArXo3A9SjFAmpmZmZkZMEApXI\\u002fC9WgyQOF6FK5HITZAH4XrUbieMEBI4XoUroc0QOxRuB6F6zJAcT0K16OwMkAUrkfhepQyQD0K16NwvTNAXI\\u002fC9SicNECuR+F6FC4qQArXo3A9CiRAXI\\u002fC9ShcIUD2KFyPwvUhQFK4HoXr0SJA\"},\"type\":\"scatter\"},{\"line\":{\"color\":\"#2980b9\",\"dash\":\"dash\",\"width\":2},\"name\":\"Deuda neta\",\"x\":[\"2006-03-01T00:00:00.000000000\",\"2006-06-01T00:00:00.000000000\",\"2006-09-01T00:00:00.000000000\",\"2007-03-01T00:00:00.000000000\",\"2007-06-01T00:00:00.000000000\",\"2007-09-01T00:00:00.000000000\",\"2008-03-01T00:00:00.000000000\",\"2008-06-01T00:00:00.000000000\",\"2008-09-01T00:00:00.000000000\",\"2009-03-01T00:00:00.000000000\",\"2009-06-01T00:00:00.000000000\",\"2009-09-01T00:00:00.000000000\",\"2010-03-01T00:00:00.000000000\",\"2010-06-01T00:00:00.000000000\",\"2010-09-01T00:00:00.000000000\",\"2011-03-01T00:00:00.000000000\",\"2011-06-01T00:00:00.000000000\",\"2011-09-01T00:00:00.000000000\",\"2012-03-01T00:00:00.000000000\",\"2012-06-01T00:00:00.000000000\",\"2012-09-01T00:00:00.000000000\",\"2013-03-01T00:00:00.000000000\",\"2013-06-01T00:00:00.000000000\",\"2013-09-01T00:00:00.000000000\",\"2014-03-01T00:00:00.000000000\",\"2014-06-01T00:00:00.000000000\",\"2014-09-01T00:00:00.000000000\",\"2015-03-01T00:00:00.000000000\",\"2015-06-01T00:00:00.000000000\",\"2015-09-01T00:00:00.000000000\",\"2016-03-01T00:00:00.000000000\",\"2016-06-01T00:00:00.000000000\",\"2016-09-01T00:00:00.000000000\",\"2017-03-01T00:00:00.000000000\",\"2017-06-01T00:00:00.000000000\",\"2017-09-01T00:00:00.000000000\",\"2018-03-01T00:00:00.000000000\",\"2018-06-01T00:00:00.000000000\",\"2018-09-01T00:00:00.000000000\",\"2019-03-01T00:00:00.000000000\",\"2019-06-01T00:00:00.000000000\",\"2019-09-01T00:00:00.000000000\",\"2020-03-01T00:00:00.000000000\",\"2020-06-01T00:00:00.000000000\",\"2020-09-01T00:00:00.000000000\",\"2021-03-01T00:00:00.000000000\",\"2021-06-01T00:00:00.000000000\",\"2021-09-01T00:00:00.000000000\",\"2022-03-01T00:00:00.000000000\",\"2022-06-01T00:00:00.000000000\",\"2022-09-01T00:00:00.000000000\",\"2023-03-01T00:00:00.000000000\",\"2023-06-01T00:00:00.000000000\",\"2023-09-01T00:00:00.000000000\",\"2024-03-01T00:00:00.000000000\",\"2024-06-01T00:00:00.000000000\",\"2024-09-01T00:00:00.000000000\",\"2025-03-01T00:00:00.000000000\",\"2025-06-01T00:00:00.000000000\",\"2025-09-01T00:00:00.000000000\"],\"y\":{\"dtype\":\"f8\",\"bdata\":\"pHA9CtejAEB7FK5H4Xr4P83MzMzMzPg\\u002fXI\\u002fC9Shc5z9I4XoUrkfRP5qZmZmZmeE\\u002fH4XrUbge8T\\u002fNzMzMzMzsv+xRuB6F6+m\\u002fSOF6FK5H\\u002fb8UrkfhehT6v3sUrkfhegTA4XoUrkfh9r89CtejcD36v8P1KFyPwu2\\u002fCtejcD0K57\\u002f2KFyPwvXwvzMzMzMzMwHAuB6F61G48r+F61G4HoX3v0jhehSuR9G\\u002fexSuR+F65L89CtejcD36v4XrUbgehfO\\u002fcT0K16NwA8DNzMzMzMwCwArXo3A9CgvAZmZmZmZmCMAfhetRuB4JwI\\u002fC9ShcjxHAcT0K16NwEMC4HoXrUbgMwClcj8L1KAzAmpmZmZmZC8AzMzMzMzMLwClcj8L1KAzAH4XrUbgeA8BSuB6F61EIwM3MzMzMzAzAzczMzMzMEMDhehSuR+ESwBSuR+F6FBbAmpmZmZmZGMBSuB6F61H4v2ZmZmZmZvq\\u002fzczMzMzMAMBI4XoUrkcHwBSuR+F6FPK\\u002fMzMzMzMzEcDNzMzMzMz4v5qZmZmZmeG\\u002fFK5H4XoU8j+amZmZmZnJP1K4HoXrUfi\\u002fuB6F61G4EcDXo3A9CtcTwOxRuB6F6w\\u002fAUrgehetREsBI4XoUrkcTwClcj8L1KBPA\"},\"type\":\"scatter\"}],                        {\"template\":{\"data\":{\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"choropleth\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"choropleth\"}],\"contourcarpet\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"contourcarpet\"}],\"contour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"contour\"}],\"heatmap\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"heatmap\"}],\"histogram2dcontour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2dcontour\"}],\"histogram2d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2d\"}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"mesh3d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"mesh3d\"}],\"parcoords\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"parcoords\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}],\"scatter3d\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatter3d\"}],\"scattercarpet\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattercarpet\"}],\"scattergeo\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergeo\"}],\"scattergl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergl\"}],\"scattermapbox\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermapbox\"}],\"scattermap\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermap\"}],\"scatterpolargl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolargl\"}],\"scatterpolar\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolar\"}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"scatterternary\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterternary\"}],\"surface\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"surface\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}]},\"layout\":{\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"autotypenumbers\":\"strict\",\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]],\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]},\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"geo\":{\"bgcolor\":\"white\",\"lakecolor\":\"white\",\"landcolor\":\"white\",\"showlakes\":true,\"showland\":true,\"subunitcolor\":\"#C8D4E3\"},\"hoverlabel\":{\"align\":\"left\"},\"hovermode\":\"closest\",\"mapbox\":{\"style\":\"light\"},\"margin\":{\"b\":0,\"l\":0,\"r\":0,\"t\":30},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"white\",\"polar\":{\"angularaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"radialaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"}},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"yaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"zaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"ternary\":{\"aaxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"caxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"}},\"title\":{\"x\":0.05},\"xaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2},\"yaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2}}},\"shapes\":[{\"line\":{\"color\":\"gray\",\"dash\":\"dot\"},\"opacity\":0.4,\"type\":\"line\",\"x0\":0,\"x1\":1,\"xref\":\"x domain\",\"y0\":0,\"y1\":0,\"yref\":\"y\"}],\"yaxis\":{\"title\":{\"text\":\"% del PIB\"},\"tickformat\":\".1f\"},\"xaxis\":{\"tickfont\":{\"size\":10},\"rangeslider\":{\"visible\":true,\"thickness\":0.05},\"dtick\":\"M6\",\"tickformat\":\"%b %Y\",\"tickangle\":45},\"font\":{\"family\":\"Inter\"},\"legend\":{\"orientation\":\"h\",\"y\":-0.25,\"x\":0.5,\"xanchor\":\"center\"},\"margin\":{\"b\":110},\"title\":{\"text\":\"Banco Central: deuda bruta y neta (% del PIB)\"},\"height\":430,\"annotations\":[{\"font\":{\"color\":\"gray\",\"size\":10},\"showarrow\":false,\"text\":\"Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile\",\"x\":0,\"xanchor\":\"left\",\"xref\":\"paper\",\"y\":-1.18,\"yref\":\"paper\"}]},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('ab3014b1-8a3e-4d47-8437-c93220715e5f');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "fig = go.Figure()\n",
+    "fig.add_trace(go.Scatter(x=df[\"fecha\"], y=df[\"deuda_bruta_bc\"],\n",
+    "    name=\"Deuda bruta\", line=dict(color=\"#e74c3c\", width=2.5)))\n",
+    "fig.add_trace(go.Scatter(x=df[\"fecha\"], y=df[\"deuda_neta_bc\"],\n",
+    "    name=\"Deuda neta\", line=dict(color=\"#2980b9\", width=2, dash=\"dash\")))\n",
+    "fig.add_hline(y=0, line_dash=\"dot\", line_color=\"gray\", opacity=0.4)\n",
+    "fig.update_layout(\n",
+    "    title=\"Banco Central: deuda bruta y neta (% del PIB)\",\n",
+    "    yaxis=dict(title=\"% del PIB\", tickformat=\".1f\"),\n",
+    "    xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),\n",
+    "    template=\"plotly_white\", font_family=\"Inter\",\n",
+    "    legend=dict(orientation=\"h\", y=-0.25, x=0.5, xanchor=\"center\"),\n",
+    "    height=430, margin=dict(b=110),\n",
+    ")\n",
+    "agregar_autor(fig)\n",
+    "fig.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "cb0d3e7e",
+   "metadata": {},
+   "source": [
+    "## 3. Sector Público Consolidado"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "8842be60",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>            <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG\"></script><script type=\"text/javascript\">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}</script>                <script type=\"text/javascript\">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>\n",
+       "        <script charset=\"utf-8\" src=\"https://cdn.plot.ly/plotly-3.3.0.min.js\" integrity=\"sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=\" crossorigin=\"anonymous\"></script>                <div id=\"1f748610-98b0-4a6c-8fcb-032aecbde2e1\" class=\"plotly-graph-div\" style=\"height:560px; width:100%;\"></div>            <script type=\"text/javascript\">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(\"1f748610-98b0-4a6c-8fcb-032aecbde2e1\")) {                    Plotly.newPlot(                        \"1f748610-98b0-4a6c-8fcb-032aecbde2e1\",                        [{\"fill\":\"tozeroy\",\"fillcolor\":\"rgba(231,76,60,0.08)\",\"hovertemplate\":\"%{x|%b %Y}\\u003cbr\\u003e\\u003cb\\u003eDeuda bruta:\\u003c\\u002fb\\u003e %{y:.1f}%\\u003cextra\\u003e\\u003c\\u002fextra\\u003e\",\"line\":{\"color\":\"#E74C3C\",\"width\":3},\"name\":\"Deuda bruta\",\"x\":[\"2006-03-01T00:00:00.000000000\",\"2006-06-01T00:00:00.000000000\",\"2006-09-01T00:00:00.000000000\",\"2007-03-01T00:00:00.000000000\",\"2007-06-01T00:00:00.000000000\",\"2007-09-01T00:00:00.000000000\",\"2008-03-01T00:00:00.000000000\",\"2008-06-01T00:00:00.000000000\",\"2008-09-01T00:00:00.000000000\",\"2009-03-01T00:00:00.000000000\",\"2009-06-01T00:00:00.000000000\",\"2009-09-01T00:00:00.000000000\",\"2010-03-01T00:00:00.000000000\",\"2010-06-01T00:00:00.000000000\",\"2010-09-01T00:00:00.000000000\",\"2011-03-01T00:00:00.000000000\",\"2011-06-01T00:00:00.000000000\",\"2011-09-01T00:00:00.000000000\",\"2012-03-01T00:00:00.000000000\",\"2012-06-01T00:00:00.000000000\",\"2012-09-01T00:00:00.000000000\",\"2013-03-01T00:00:00.000000000\",\"2013-06-01T00:00:00.000000000\",\"2013-09-01T00:00:00.000000000\",\"2014-03-01T00:00:00.000000000\",\"2014-06-01T00:00:00.000000000\",\"2014-09-01T00:00:00.000000000\",\"2015-03-01T00:00:00.000000000\",\"2015-06-01T00:00:00.000000000\",\"2015-09-01T00:00:00.000000000\",\"2016-03-01T00:00:00.000000000\",\"2016-06-01T00:00:00.000000000\",\"2016-09-01T00:00:00.000000000\",\"2017-03-01T00:00:00.000000000\",\"2017-06-01T00:00:00.000000000\",\"2017-09-01T00:00:00.000000000\",\"2018-03-01T00:00:00.000000000\",\"2018-06-01T00:00:00.000000000\",\"2018-09-01T00:00:00.000000000\",\"2019-03-01T00:00:00.000000000\",\"2019-06-01T00:00:00.000000000\",\"2019-09-01T00:00:00.000000000\",\"2020-03-01T00:00:00.000000000\",\"2020-06-01T00:00:00.000000000\",\"2020-09-01T00:00:00.000000000\",\"2021-03-01T00:00:00.000000000\",\"2021-06-01T00:00:00.000000000\",\"2021-09-01T00:00:00.000000000\",\"2022-03-01T00:00:00.000000000\",\"2022-06-01T00:00:00.000000000\",\"2022-09-01T00:00:00.000000000\",\"2023-03-01T00:00:00.000000000\",\"2023-06-01T00:00:00.000000000\",\"2023-09-01T00:00:00.000000000\",\"2024-03-01T00:00:00.000000000\",\"2024-06-01T00:00:00.000000000\",\"2024-09-01T00:00:00.000000000\",\"2025-03-01T00:00:00.000000000\",\"2025-06-01T00:00:00.000000000\",\"2025-09-01T00:00:00.000000000\"],\"y\":{\"dtype\":\"f8\",\"bdata\":\"cT0K16MwNUApXI\\u002fC9egzQEjhehSuxzJA4XoUrkchMEAK16NwPQoxQLgehetROC1A9ihcj8J1KUCamZmZmZkrQMP1KFyPwjFArkfhehQuMkCF61G4HoUxQMP1KFyPAjNAw\\u002fUoXI9CNUBxPQrXo7AzQClcj8L1KDNAXI\\u002fC9SjcNEAzMzMzM\\u002fM0QOF6FK5HoTdAuB6F61F4OEAzMzMzM7M4QGZmZmZmZjhAAAAAAABAOEDhehSuRyE5QFK4HoXr0TlA9ihcj8L1OUCkcD0K1+M5QB+F61G4XjpAAAAAAAAAO0BSuB6F6xE8QB+F61G43jxAuB6F61E4PkCkcD0K1wNAQDMzMzMz8z9AMzMzMzMzQEC4HoXrURhBQNejcD0Kt0BAexSuR+HaQEC4HoXrUbhAQArXo3A9KkFAw\\u002fUoXI+CQUDhehSuRyFCQLgehetRWEJArkfhehROREAUrkfhehRJQEjhehSuJ0lAUrgehetRSEAfhetRuJ5JQLgehetRuExAXI\\u002fC9SgcSkAfhetRuN5MQBSuR+F6NExAMzMzMzNTS0DsUbgehatLQI\\u002fC9ShcL01AFK5H4XoUT0AzMzMzM1NLQJqZmZmZ+UlAUrgehetRSUDhehSuR+FJQLgehetROEpA\"},\"type\":\"scatter\"},{\"hovertemplate\":\"%{x|%b %Y}\\u003cbr\\u003e\\u003cb\\u003eDeuda neta:\\u003c\\u002fb\\u003e %{y:.1f}%\\u003cextra\\u003e\\u003c\\u002fextra\\u003e\",\"line\":{\"color\":\"#1F77B4\",\"dash\":\"dash\",\"width\":3},\"name\":\"Deuda neta\",\"x\":[\"2006-03-01T00:00:00.000000000\",\"2006-06-01T00:00:00.000000000\",\"2006-09-01T00:00:00.000000000\",\"2007-03-01T00:00:00.000000000\",\"2007-06-01T00:00:00.000000000\",\"2007-09-01T00:00:00.000000000\",\"2008-03-01T00:00:00.000000000\",\"2008-06-01T00:00:00.000000000\",\"2008-09-01T00:00:00.000000000\",\"2009-03-01T00:00:00.000000000\",\"2009-06-01T00:00:00.000000000\",\"2009-09-01T00:00:00.000000000\",\"2010-03-01T00:00:00.000000000\",\"2010-06-01T00:00:00.000000000\",\"2010-09-01T00:00:00.000000000\",\"2011-03-01T00:00:00.000000000\",\"2011-06-01T00:00:00.000000000\",\"2011-09-01T00:00:00.000000000\",\"2012-03-01T00:00:00.000000000\",\"2012-06-01T00:00:00.000000000\",\"2012-09-01T00:00:00.000000000\",\"2013-03-01T00:00:00.000000000\",\"2013-06-01T00:00:00.000000000\",\"2013-09-01T00:00:00.000000000\",\"2014-03-01T00:00:00.000000000\",\"2014-06-01T00:00:00.000000000\",\"2014-09-01T00:00:00.000000000\",\"2015-03-01T00:00:00.000000000\",\"2015-06-01T00:00:00.000000000\",\"2015-09-01T00:00:00.000000000\",\"2016-03-01T00:00:00.000000000\",\"2016-06-01T00:00:00.000000000\",\"2016-09-01T00:00:00.000000000\",\"2017-03-01T00:00:00.000000000\",\"2017-06-01T00:00:00.000000000\",\"2017-09-01T00:00:00.000000000\",\"2018-03-01T00:00:00.000000000\",\"2018-06-01T00:00:00.000000000\",\"2018-09-01T00:00:00.000000000\",\"2019-03-01T00:00:00.000000000\",\"2019-06-01T00:00:00.000000000\",\"2019-09-01T00:00:00.000000000\",\"2020-03-01T00:00:00.000000000\",\"2020-06-01T00:00:00.000000000\",\"2020-09-01T00:00:00.000000000\",\"2021-03-01T00:00:00.000000000\",\"2021-06-01T00:00:00.000000000\",\"2021-09-01T00:00:00.000000000\",\"2022-03-01T00:00:00.000000000\",\"2022-06-01T00:00:00.000000000\",\"2022-09-01T00:00:00.000000000\",\"2023-03-01T00:00:00.000000000\",\"2023-06-01T00:00:00.000000000\",\"2023-09-01T00:00:00.000000000\",\"2024-03-01T00:00:00.000000000\",\"2024-06-01T00:00:00.000000000\",\"2024-09-01T00:00:00.000000000\",\"2025-03-01T00:00:00.000000000\",\"2025-06-01T00:00:00.000000000\",\"2025-09-01T00:00:00.000000000\"],\"y\":{\"dtype\":\"f8\",\"bdata\":\"hetRuB6F2z+uR+F6FK4BwPYoXI\\u002fC9RHA16NwPQrXHsBI4XoUrsckwHE9CtejcCfAmpmZmZkZKsDhehSuR2ExwClcj8L1qDLAzczMzMwMM8DD9Shcj0IvwMP1KFyPwi7AAAAAAACAJsBSuB6F69EnwGZmZmZm5iLAexSuR+H6IMBSuB6F69EhwIXrUbgeBSjA16NwPQpXI8CPwvUoXI8lwMP1KFyPQiDApHA9CtejHcAK16NwPQohwK5H4XoUrh\\u002fAzczMzMxMIcDD9Shcj0IgwBSuR+F6lCLApHA9CtejHcDD9Shcj8IbwM3MzMzMTCLAZmZmZmZmGcBmZmZmZmYbwClcj8L1KBLAKVyPwvUoAsBxPQrXo3ABwDMzMzMzM+u\\u002f9ihcj8L1BEBI4XoUrkf5P3E9CtejcPk\\u002fw\\u002fUoXI\\u002fC\\u002fT89CtejcD32Pylcj8L1KPA\\u002fUrgehetR6L+kcD0K16MZQDMzMzMzMytAexSuR+H6J0BSuB6F61EpQNejcD0KFzFASOF6FK7HLkB7FK5H4bowQClcj8L16DJApHA9CtdjNUCamZmZmdk0QClcj8L16DdAUrgehesRNEBI4XoUrgc0QPYoXI\\u002fC9TZAAAAAAAAANkA9CtejcP01QMP1KFyPgjZA\"},\"type\":\"scatter\"}],                        {\"template\":{\"data\":{\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"choropleth\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"choropleth\"}],\"contourcarpet\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"contourcarpet\"}],\"contour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"contour\"}],\"heatmap\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"heatmap\"}],\"histogram2dcontour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2dcontour\"}],\"histogram2d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2d\"}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"mesh3d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"mesh3d\"}],\"parcoords\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"parcoords\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}],\"scatter3d\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatter3d\"}],\"scattercarpet\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattercarpet\"}],\"scattergeo\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergeo\"}],\"scattergl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergl\"}],\"scattermapbox\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermapbox\"}],\"scattermap\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermap\"}],\"scatterpolargl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolargl\"}],\"scatterpolar\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolar\"}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"scatterternary\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterternary\"}],\"surface\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"surface\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}]},\"layout\":{\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"autotypenumbers\":\"strict\",\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]],\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]},\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"geo\":{\"bgcolor\":\"white\",\"lakecolor\":\"white\",\"landcolor\":\"white\",\"showlakes\":true,\"showland\":true,\"subunitcolor\":\"#C8D4E3\"},\"hoverlabel\":{\"align\":\"left\"},\"hovermode\":\"closest\",\"mapbox\":{\"style\":\"light\"},\"margin\":{\"b\":0,\"l\":0,\"r\":0,\"t\":30},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"white\",\"polar\":{\"angularaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"radialaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"}},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"yaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"zaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"ternary\":{\"aaxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"caxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"}},\"title\":{\"x\":0.05},\"xaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2},\"yaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2}}},\"shapes\":[{\"line\":{\"color\":\"gray\",\"dash\":\"dot\"},\"opacity\":0.5,\"type\":\"line\",\"x0\":0,\"x1\":1,\"xref\":\"x domain\",\"y0\":0,\"y1\":0,\"yref\":\"y\"}],\"annotations\":[{\"font\":{\"color\":\"#E74C3C\",\"size\":11},\"showarrow\":false,\"text\":\"Deuda bruta\",\"x\":\"2025-09-01T00:00:00\",\"xshift\":35,\"y\":52.44},{\"font\":{\"color\":\"#1F77B4\",\"size\":11},\"showarrow\":false,\"text\":\"Deuda neta\",\"x\":\"2025-09-01T00:00:00\",\"xshift\":35,\"y\":22.51},{\"font\":{\"color\":\"gray\",\"size\":10},\"showarrow\":false,\"text\":\"Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile\",\"x\":0,\"xanchor\":\"left\",\"xref\":\"paper\",\"y\":-0.22,\"yref\":\"paper\"}],\"title\":{\"font\":{\"size\":18},\"text\":\"Sector P\\u00fablico Consolidado: deuda bruta y neta (% del PIB)\\u003cbr\\u003e\\u003csup\\u003e\\u00daltimo dato: Bruta 52.4% | Neta 22.5%\\u003c\\u002fsup\\u003e\",\"x\":0.5,\"xanchor\":\"center\"},\"font\":{\"family\":\"Inter\"},\"yaxis\":{\"title\":{\"text\":\"% del PIB\"},\"tickformat\":\".0f\",\"gridcolor\":\"rgba(0,0,0,0.08)\",\"zeroline\":false},\"xaxis\":{\"rangeslider\":{\"visible\":true,\"thickness\":0.025},\"dtick\":\"M12\",\"tickformat\":\"%Y\",\"tickangle\":45,\"showgrid\":false},\"margin\":{\"l\":70,\"r\":90,\"t\":90,\"b\":90},\"height\":560,\"hovermode\":\"x unified\",\"showlegend\":false},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('1f748610-98b0-4a6c-8fcb-032aecbde2e1');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "ultimo_bruto = df[\"deuda_bruta_sp\"].iloc[-1]\n",
+    "ultimo_neto  = df[\"deuda_neta_sp\"].iloc[-1]\n",
+    "\n",
+    "fig = go.Figure()\n",
+    "\n",
+    "# Deuda bruta\n",
+    "fig.add_trace(\n",
+    "    go.Scatter(\n",
+    "        x=df[\"fecha\"],\n",
+    "        y=df[\"deuda_bruta_sp\"],\n",
+    "        name=\"Deuda bruta\",\n",
+    "        line=dict(color=\"#E74C3C\", width=3),\n",
+    "        fill=\"tozeroy\",\n",
+    "        fillcolor=\"rgba(231,76,60,0.08)\",\n",
+    "        hovertemplate=\"%{x|%b %Y}<br><b>Deuda bruta:</b> %{y:.1f}%<extra></extra>\",\n",
+    "    )\n",
+    ")\n",
+    "\n",
+    "# Deuda neta\n",
+    "fig.add_trace(\n",
+    "    go.Scatter(\n",
+    "        x=df[\"fecha\"],\n",
+    "        y=df[\"deuda_neta_sp\"],\n",
+    "        name=\"Deuda neta\",\n",
+    "        line=dict(color=\"#1F77B4\", width=3, dash=\"dash\"),\n",
+    "        hovertemplate=\"%{x|%b %Y}<br><b>Deuda neta:</b> %{y:.1f}%<extra></extra>\",\n",
+    "    )\n",
+    ")\n",
+    "\n",
+    "# Línea cero\n",
+    "fig.add_hline(\n",
+    "    y=0,\n",
+    "    line_dash=\"dot\",\n",
+    "    line_color=\"gray\",\n",
+    "    opacity=0.5\n",
+    ")\n",
+    "\n",
+    "# Etiquetas al final de las series\n",
+    "fig.add_annotation(\n",
+    "    x=df[\"fecha\"].iloc[-1],\n",
+    "    y=df[\"deuda_bruta_sp\"].iloc[-1],\n",
+    "    text=\"Deuda bruta\",\n",
+    "    showarrow=False,\n",
+    "    font=dict(size=11, color=\"#E74C3C\"),\n",
+    "    xshift=35\n",
+    ")\n",
+    "\n",
+    "fig.add_annotation(\n",
+    "    x=df[\"fecha\"].iloc[-1],\n",
+    "    y=df[\"deuda_neta_sp\"].iloc[-1],\n",
+    "    text=\"Deuda neta\",\n",
+    "    showarrow=False,\n",
+    "    font=dict(size=11, color=\"#1F77B4\"),\n",
+    "    xshift=35\n",
+    ")\n",
+    "\n",
+    "fig.update_layout(\n",
+    "\n",
+    "    title=dict(\n",
+    "        text=(\n",
+    "            \"Sector Público Consolidado: deuda bruta y neta (% del PIB)\"\n",
+    "            f\"<br><sup>Último dato: Bruta {ultimo_bruto:.1f}% | \"\n",
+    "            f\"Neta {ultimo_neto:.1f}%</sup>\"\n",
+    "        ),\n",
+    "        x=0.5,\n",
+    "        xanchor=\"center\",\n",
+    "        font=dict(size=18)\n",
+    "    ),\n",
+    "\n",
+    "    template=\"plotly_white\",\n",
+    "    font_family=\"Inter\",\n",
+    "\n",
+    "    height=560,\n",
+    "\n",
+    "    hovermode=\"x unified\",\n",
+    "\n",
+    "    yaxis=dict(\n",
+    "        title=\"% del PIB\",\n",
+    "        tickformat=\".0f\",\n",
+    "        gridcolor=\"rgba(0,0,0,0.08)\",\n",
+    "        zeroline=False\n",
+    "    ),\n",
+    "\n",
+    "    xaxis=dict(\n",
+    "        dtick=\"M12\",\n",
+    "        tickformat=\"%Y\",\n",
+    "        tickangle=45,\n",
+    "        showgrid=False,\n",
+    "        rangeslider=dict(\n",
+    "            visible=True,\n",
+    "            thickness=0.025\n",
+    "        )\n",
+    "    ),\n",
+    "\n",
+    "    showlegend=False,\n",
+    "\n",
+    "    margin=dict(\n",
+    "        l=70,\n",
+    "        r=90,\n",
+    "        t=90,\n",
+    "        b=90\n",
+    "    )\n",
+    ")\n",
+    "\n",
+    "# Fuente más abajo para evitar superposición\n",
+    "fig.add_annotation(\n",
+    "    text=AUTOR,\n",
+    "    x=0,\n",
+    "    y=-0.22,\n",
+    "    xref=\"paper\",\n",
+    "    yref=\"paper\",\n",
+    "    showarrow=False,\n",
+    "    font=dict(size=10, color=\"gray\"),\n",
+    "    xanchor=\"left\"\n",
+    ")\n",
+    "\n",
+    "fig.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6258c9ca",
+   "metadata": {},
+   "source": [
+    "## 4. Empresas Públicas"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "34e579b3",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>            <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG\"></script><script type=\"text/javascript\">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}</script>                <script type=\"text/javascript\">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>\n",
+       "        <script charset=\"utf-8\" src=\"https://cdn.plot.ly/plotly-3.3.0.min.js\" integrity=\"sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=\" crossorigin=\"anonymous\"></script>                <div id=\"52664357-6eab-4b48-bff8-df179ee249d9\" class=\"plotly-graph-div\" style=\"height:430px; width:100%;\"></div>            <script type=\"text/javascript\">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(\"52664357-6eab-4b48-bff8-df179ee249d9\")) {                    Plotly.newPlot(                        \"52664357-6eab-4b48-bff8-df179ee249d9\",                        [{\"line\":{\"color\":\"#e74c3c\",\"width\":2.5},\"name\":\"Deuda bruta\",\"x\":[\"2006-03-01T00:00:00.000000000\",\"2006-06-01T00:00:00.000000000\",\"2006-09-01T00:00:00.000000000\",\"2007-03-01T00:00:00.000000000\",\"2007-06-01T00:00:00.000000000\",\"2007-09-01T00:00:00.000000000\",\"2008-03-01T00:00:00.000000000\",\"2008-06-01T00:00:00.000000000\",\"2008-09-01T00:00:00.000000000\",\"2009-03-01T00:00:00.000000000\",\"2009-06-01T00:00:00.000000000\",\"2009-09-01T00:00:00.000000000\",\"2010-03-01T00:00:00.000000000\",\"2010-06-01T00:00:00.000000000\",\"2010-09-01T00:00:00.000000000\",\"2011-03-01T00:00:00.000000000\",\"2011-06-01T00:00:00.000000000\",\"2011-09-01T00:00:00.000000000\",\"2012-03-01T00:00:00.000000000\",\"2012-06-01T00:00:00.000000000\",\"2012-09-01T00:00:00.000000000\",\"2013-03-01T00:00:00.000000000\",\"2013-06-01T00:00:00.000000000\",\"2013-09-01T00:00:00.000000000\",\"2014-03-01T00:00:00.000000000\",\"2014-06-01T00:00:00.000000000\",\"2014-09-01T00:00:00.000000000\",\"2015-03-01T00:00:00.000000000\",\"2015-06-01T00:00:00.000000000\",\"2015-09-01T00:00:00.000000000\",\"2016-03-01T00:00:00.000000000\",\"2016-06-01T00:00:00.000000000\",\"2016-09-01T00:00:00.000000000\",\"2017-03-01T00:00:00.000000000\",\"2017-06-01T00:00:00.000000000\",\"2017-09-01T00:00:00.000000000\",\"2018-03-01T00:00:00.000000000\",\"2018-06-01T00:00:00.000000000\",\"2018-09-01T00:00:00.000000000\",\"2019-03-01T00:00:00.000000000\",\"2019-06-01T00:00:00.000000000\",\"2019-09-01T00:00:00.000000000\",\"2020-03-01T00:00:00.000000000\",\"2020-06-01T00:00:00.000000000\",\"2020-09-01T00:00:00.000000000\",\"2021-03-01T00:00:00.000000000\",\"2021-06-01T00:00:00.000000000\",\"2021-09-01T00:00:00.000000000\",\"2022-03-01T00:00:00.000000000\",\"2022-06-01T00:00:00.000000000\",\"2022-09-01T00:00:00.000000000\",\"2023-03-01T00:00:00.000000000\",\"2023-06-01T00:00:00.000000000\",\"2023-09-01T00:00:00.000000000\",\"2024-03-01T00:00:00.000000000\",\"2024-06-01T00:00:00.000000000\",\"2024-09-01T00:00:00.000000000\",\"2025-03-01T00:00:00.000000000\",\"2025-06-01T00:00:00.000000000\",\"2025-09-01T00:00:00.000000000\"],\"y\":{\"dtype\":\"f8\",\"bdata\":\"AAAAAAAAFkBSuB6F61EWQJqZmZmZmRVAw\\u002fUoXI\\u002fCE0CamZmZmZkTQOxRuB6F6xNArkfhehSuEUAzMzMzMzMUQK5H4XoUrhZA7FG4HoXrHEBI4XoUrkcZQFK4HoXrURpAZmZmZmZmGkAzMzMzMzMbQIXrUbgehRhAFK5H4XoUGEDNzMzMzMwWQArXo3A9ChhAKVyPwvUoGUCF61G4HoUaQI\\u002fC9Shcjx1AcT0K16NwG0CuR+F6FK4cQIXrUbgehR1AUrgehevRIEAK16NwPYogQKRwPQrXoyFAj8L1KFwPIkAK16NwPQoiQBSuR+F6FCVA9ihcj8L1IkCF61G4HoUiQKRwPQrXoyJA9ihcj8L1IkApXI\\u002fC9agiQD0K16NwPSJAj8L1KFyPIECkcD0K16MhQAAAAAAAgCFAH4XrUbieIUBI4XoUrschQKRwPQrXIyRAzczMzMzMJ0DXo3A9ClcpQFK4HoXrUShAmpmZmZmZJEDNzMzMzEwjQJqZmZmZmSRAMzMzMzOzIkDD9Shcj0IlQOxRuB6FayVAPQrXo3A9IkApXI\\u002fC9SgiQClcj8L1qCRAzczMzMzMJkCF61G4HgUmQFyPwvUoXCRApHA9CtcjJUApXI\\u002fC9agkQI\\u002fC9ShcDyVA\"},\"type\":\"scatter\"},{\"line\":{\"color\":\"#2980b9\",\"dash\":\"dash\",\"width\":2},\"name\":\"Deuda neta\",\"x\":[\"2006-03-01T00:00:00.000000000\",\"2006-06-01T00:00:00.000000000\",\"2006-09-01T00:00:00.000000000\",\"2007-03-01T00:00:00.000000000\",\"2007-06-01T00:00:00.000000000\",\"2007-09-01T00:00:00.000000000\",\"2008-03-01T00:00:00.000000000\",\"2008-06-01T00:00:00.000000000\",\"2008-09-01T00:00:00.000000000\",\"2009-03-01T00:00:00.000000000\",\"2009-06-01T00:00:00.000000000\",\"2009-09-01T00:00:00.000000000\",\"2010-03-01T00:00:00.000000000\",\"2010-06-01T00:00:00.000000000\",\"2010-09-01T00:00:00.000000000\",\"2011-03-01T00:00:00.000000000\",\"2011-06-01T00:00:00.000000000\",\"2011-09-01T00:00:00.000000000\",\"2012-03-01T00:00:00.000000000\",\"2012-06-01T00:00:00.000000000\",\"2012-09-01T00:00:00.000000000\",\"2013-03-01T00:00:00.000000000\",\"2013-06-01T00:00:00.000000000\",\"2013-09-01T00:00:00.000000000\",\"2014-03-01T00:00:00.000000000\",\"2014-06-01T00:00:00.000000000\",\"2014-09-01T00:00:00.000000000\",\"2015-03-01T00:00:00.000000000\",\"2015-06-01T00:00:00.000000000\",\"2015-09-01T00:00:00.000000000\",\"2016-03-01T00:00:00.000000000\",\"2016-06-01T00:00:00.000000000\",\"2016-09-01T00:00:00.000000000\",\"2017-03-01T00:00:00.000000000\",\"2017-06-01T00:00:00.000000000\",\"2017-09-01T00:00:00.000000000\",\"2018-03-01T00:00:00.000000000\",\"2018-06-01T00:00:00.000000000\",\"2018-09-01T00:00:00.000000000\",\"2019-03-01T00:00:00.000000000\",\"2019-06-01T00:00:00.000000000\",\"2019-09-01T00:00:00.000000000\",\"2020-03-01T00:00:00.000000000\",\"2020-06-01T00:00:00.000000000\",\"2020-09-01T00:00:00.000000000\",\"2021-03-01T00:00:00.000000000\",\"2021-06-01T00:00:00.000000000\",\"2021-09-01T00:00:00.000000000\",\"2022-03-01T00:00:00.000000000\",\"2022-06-01T00:00:00.000000000\",\"2022-09-01T00:00:00.000000000\",\"2023-03-01T00:00:00.000000000\",\"2023-06-01T00:00:00.000000000\",\"2023-09-01T00:00:00.000000000\",\"2024-03-01T00:00:00.000000000\",\"2024-06-01T00:00:00.000000000\",\"2024-09-01T00:00:00.000000000\",\"2025-03-01T00:00:00.000000000\",\"2025-06-01T00:00:00.000000000\",\"2025-09-01T00:00:00.000000000\"],\"y\":{\"dtype\":\"f8\",\"bdata\":\"FK5H4XoUFEAzMzMzMzMTQIXrUbgehRJAH4XrUbgeEUBxPQrXo3APQDMzMzMzMw1AMzMzMzMzEEAK16NwPQoTQI\\u002fC9ShcjxRAj8L1KFyPGUAfhetRuB4XQOxRuB6F6xZAj8L1KFyPF0CuR+F6FK4YQFK4HoXrURZAcT0K16NwE0DXo3A9CtcSQNejcD0K1xRAexSuR+F6FUAAAAAAAAAXQNejcD0K1xhAcT0K16NwF0CamZmZmZkZQGZmZmZmZhpAcT0K16NwHUBmZmZmZmYdQPYoXI\\u002fC9R9AmpmZmZmZIEAUrkfhepQgQIXrUbgeBSJAcT0K16NwIUB7FK5H4XohQBSuR+F6lCFAAAAAAACAIUAAAAAAAAAhQNejcD0KVyBAhetRuB6FHUC4HoXrUbgeQClcj8L1KB5AzczMzMxMIECkcD0K16MgQB+F61G4niFArkfhehSuJEDXo3A9ClclQD0K16NwPSRAAAAAAAAAIkDXo3A9CtcgQArXo3A9iiFACtejcD0KIEBcj8L1KFwiQJqZmZmZmSJAexSuR+F6H0AAAAAAAAAgQEjhehSuxyFA9ihcj8L1I0AzMzMzMzMjQMP1KFyPQiJAAAAAAACAI0AK16NwPQojQGZmZmZmZiNA\"},\"type\":\"scatter\"}],                        {\"template\":{\"data\":{\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"choropleth\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"choropleth\"}],\"contourcarpet\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"contourcarpet\"}],\"contour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"contour\"}],\"heatmap\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"heatmap\"}],\"histogram2dcontour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2dcontour\"}],\"histogram2d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2d\"}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"mesh3d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"mesh3d\"}],\"parcoords\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"parcoords\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}],\"scatter3d\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatter3d\"}],\"scattercarpet\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattercarpet\"}],\"scattergeo\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergeo\"}],\"scattergl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergl\"}],\"scattermapbox\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermapbox\"}],\"scattermap\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermap\"}],\"scatterpolargl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolargl\"}],\"scatterpolar\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolar\"}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"scatterternary\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterternary\"}],\"surface\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"surface\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}]},\"layout\":{\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"autotypenumbers\":\"strict\",\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]],\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]},\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"geo\":{\"bgcolor\":\"white\",\"lakecolor\":\"white\",\"landcolor\":\"white\",\"showlakes\":true,\"showland\":true,\"subunitcolor\":\"#C8D4E3\"},\"hoverlabel\":{\"align\":\"left\"},\"hovermode\":\"closest\",\"mapbox\":{\"style\":\"light\"},\"margin\":{\"b\":0,\"l\":0,\"r\":0,\"t\":30},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"white\",\"polar\":{\"angularaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"radialaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"}},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"yaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"zaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"ternary\":{\"aaxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"caxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"}},\"title\":{\"x\":0.05},\"xaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2},\"yaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2}}},\"shapes\":[{\"line\":{\"color\":\"gray\",\"dash\":\"dot\"},\"opacity\":0.4,\"type\":\"line\",\"x0\":0,\"x1\":1,\"xref\":\"x domain\",\"y0\":0,\"y1\":0,\"yref\":\"y\"}],\"yaxis\":{\"title\":{\"text\":\"% del PIB\"},\"tickformat\":\".1f\"},\"xaxis\":{\"tickfont\":{\"size\":10},\"rangeslider\":{\"visible\":true,\"thickness\":0.05},\"dtick\":\"M6\",\"tickformat\":\"%b %Y\",\"tickangle\":45},\"font\":{\"family\":\"Inter\"},\"legend\":{\"orientation\":\"h\",\"y\":-1.25,\"x\":0.5,\"xanchor\":\"center\"},\"margin\":{\"b\":110},\"title\":{\"text\":\"Empresas P\\u00fablicas: deuda bruta y neta (% del PIB)\"},\"height\":430,\"annotations\":[{\"font\":{\"color\":\"gray\",\"size\":10},\"showarrow\":false,\"text\":\"Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile\",\"x\":0,\"xanchor\":\"left\",\"xref\":\"paper\",\"y\":-1.18,\"yref\":\"paper\"}]},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('52664357-6eab-4b48-bff8-df179ee249d9');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "fig = go.Figure()\n",
+    "fig.add_trace(go.Scatter(x=df[\"fecha\"], y=df[\"deuda_bruta_ep\"],\n",
+    "    name=\"Deuda bruta\", line=dict(color=\"#e74c3c\", width=2.5)))\n",
+    "fig.add_trace(go.Scatter(x=df[\"fecha\"], y=df[\"deuda_neta_ep\"],\n",
+    "    name=\"Deuda neta\", line=dict(color=\"#2980b9\", width=2, dash=\"dash\")))\n",
+    "fig.add_hline(y=0, line_dash=\"dot\", line_color=\"gray\", opacity=0.4)\n",
+    "fig.update_layout(\n",
+    "    title=\"Empresas Públicas: deuda bruta y neta (% del PIB)\",\n",
+    "    yaxis=dict(title=\"% del PIB\", tickformat=\".1f\"),\n",
+    "    xaxis=dict(**EJE_X, rangeslider=dict(visible=True, thickness=0.05)),\n",
+    "    template=\"plotly_white\", font_family=\"Inter\",\n",
+    "    legend=dict(orientation=\"h\", y=-1.25, x=0.5, xanchor=\"center\"),\n",
+    "    height=430, margin=dict(b=110),\n",
+    ")\n",
+    "agregar_autor(fig)\n",
+    "fig.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d375674a",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "\n",
+    "## 5. Fondos Soberanos\n",
+    "\n",
+    "### 📦 Fondos Soberanos: Total, FEES y FRP"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "e157cf4d",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>            <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG\"></script><script type=\"text/javascript\">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}</script>                <script type=\"text/javascript\">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>\n",
+       "        <script charset=\"utf-8\" src=\"https://cdn.plot.ly/plotly-3.3.0.min.js\" integrity=\"sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=\" crossorigin=\"anonymous\"></script>                <div id=\"a25fff1c-1da5-4a33-9d17-97f95cca2691\" class=\"plotly-graph-div\" style=\"height:450px; width:100%;\"></div>            <script type=\"text/javascript\">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(\"a25fff1c-1da5-4a33-9d17-97f95cca2691\")) {                    Plotly.newPlot(                        \"a25fff1c-1da5-4a33-9d17-97f95cca2691\",                        [],                        {\"template\":{\"data\":{\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"choropleth\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"choropleth\"}],\"contourcarpet\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"contourcarpet\"}],\"contour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"contour\"}],\"heatmap\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"heatmap\"}],\"histogram2dcontour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2dcontour\"}],\"histogram2d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2d\"}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"mesh3d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"mesh3d\"}],\"parcoords\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"parcoords\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}],\"scatter3d\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatter3d\"}],\"scattercarpet\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattercarpet\"}],\"scattergeo\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergeo\"}],\"scattergl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergl\"}],\"scattermapbox\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermapbox\"}],\"scattermap\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermap\"}],\"scatterpolargl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolargl\"}],\"scatterpolar\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolar\"}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"scatterternary\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterternary\"}],\"surface\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"surface\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}]},\"layout\":{\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"autotypenumbers\":\"strict\",\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]],\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]},\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"geo\":{\"bgcolor\":\"white\",\"lakecolor\":\"white\",\"landcolor\":\"white\",\"showlakes\":true,\"showland\":true,\"subunitcolor\":\"#C8D4E3\"},\"hoverlabel\":{\"align\":\"left\"},\"hovermode\":\"closest\",\"mapbox\":{\"style\":\"light\"},\"margin\":{\"b\":0,\"l\":0,\"r\":0,\"t\":30},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"white\",\"polar\":{\"angularaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"radialaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"}},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"yaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"zaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"ternary\":{\"aaxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"caxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"}},\"title\":{\"x\":0.05},\"xaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2},\"yaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2}}},\"title\":{\"font\":{\"size\":15},\"text\":\"Fondos Soberanos: Total, FEES y FRP (millones de USD)\"},\"yaxis\":{\"title\":{\"text\":\"Millones de USD\"},\"tickformat\":\",.0f\"},\"xaxis\":{\"tickfont\":{\"size\":10},\"rangeslider\":{\"visible\":true,\"thickness\":0.05},\"dtick\":\"M6\",\"tickformat\":\"%b %Y\",\"tickangle\":45},\"font\":{\"family\":\"Inter\"},\"legend\":{\"orientation\":\"h\",\"y\":-0.25,\"x\":0.5,\"xanchor\":\"center\"},\"margin\":{\"b\":120,\"t\":60},\"height\":450,\"annotations\":[{\"font\":{\"color\":\"gray\",\"size\":9},\"showarrow\":false,\"text\":\"Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile\",\"x\":0,\"xanchor\":\"left\",\"xref\":\"paper\",\"y\":-0.32,\"yref\":\"paper\"}]},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('a25fff1c-1da5-4a33-9d17-97f95cca2691');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "grafico_multi(\n",
+    "    trazas=[\n",
+    "        (fondossoberanos, \"Total consolidado\", \"#2980b9\", 3,   \"solid\"),\n",
+    "        (fees,            \"FEES\",              \"#27ae60\", 1.5, \"dash\"),\n",
+    "        (frp,             \"FRP\",               \"#8e44ad\", 1.5, \"dot\"),\n",
+    "    ],\n",
+    "    titulo=\"Fondos Soberanos: Total, FEES y FRP (millones de USD)\",\n",
+    "    ytitle=\"Millones de USD\",\n",
+    ").show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5e1d9bfa",
+   "metadata": {},
+   "source": [
+    "### 🏦 Otros Activos del Tesoro Público (OATP)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "5952726a",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>            <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG\"></script><script type=\"text/javascript\">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}</script>                <script type=\"text/javascript\">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>\n",
+       "        <script charset=\"utf-8\" src=\"https://cdn.plot.ly/plotly-3.3.0.min.js\" integrity=\"sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=\" crossorigin=\"anonymous\"></script>                <div id=\"1bea0cc7-a1be-4530-8c42-2f9551e84a52\" class=\"plotly-graph-div\" style=\"height:450px; width:100%;\"></div>            <script type=\"text/javascript\">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(\"1bea0cc7-a1be-4530-8c42-2f9551e84a52\")) {                    Plotly.newPlot(                        \"1bea0cc7-a1be-4530-8c42-2f9551e84a52\",                        [],                        {\"template\":{\"data\":{\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"white\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"#C8D4E3\",\"linecolor\":\"#C8D4E3\",\"minorgridcolor\":\"#C8D4E3\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"choropleth\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"choropleth\"}],\"contourcarpet\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"contourcarpet\"}],\"contour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"contour\"}],\"heatmap\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"heatmap\"}],\"histogram2dcontour\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2dcontour\"}],\"histogram2d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"histogram2d\"}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"mesh3d\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"type\":\"mesh3d\"}],\"parcoords\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"parcoords\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}],\"scatter3d\":[{\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatter3d\"}],\"scattercarpet\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattercarpet\"}],\"scattergeo\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergeo\"}],\"scattergl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattergl\"}],\"scattermapbox\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermapbox\"}],\"scattermap\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scattermap\"}],\"scatterpolargl\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolargl\"}],\"scatterpolar\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterpolar\"}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"scatterternary\":[{\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"type\":\"scatterternary\"}],\"surface\":[{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"type\":\"surface\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}]},\"layout\":{\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"autotypenumbers\":\"strict\",\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]],\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]},\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"geo\":{\"bgcolor\":\"white\",\"lakecolor\":\"white\",\"landcolor\":\"white\",\"showlakes\":true,\"showland\":true,\"subunitcolor\":\"#C8D4E3\"},\"hoverlabel\":{\"align\":\"left\"},\"hovermode\":\"closest\",\"mapbox\":{\"style\":\"light\"},\"margin\":{\"b\":0,\"l\":0,\"r\":0,\"t\":30},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"white\",\"polar\":{\"angularaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"radialaxis\":{\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\"}},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"yaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"},\"zaxis\":{\"backgroundcolor\":\"white\",\"gridcolor\":\"#DFE8F3\",\"gridwidth\":2,\"linecolor\":\"#EBF0F8\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"#EBF0F8\"}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"ternary\":{\"aaxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"},\"bgcolor\":\"white\",\"caxis\":{\"gridcolor\":\"#DFE8F3\",\"linecolor\":\"#A2B1C6\",\"ticks\":\"\"}},\"title\":{\"x\":0.05},\"xaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2},\"yaxis\":{\"automargin\":true,\"gridcolor\":\"#EBF0F8\",\"linecolor\":\"#EBF0F8\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"#EBF0F8\",\"zerolinewidth\":2}}},\"title\":{\"font\":{\"size\":15},\"text\":\"Otros Activos del Tesoro P\\u00fablico (OATP) por moneda (millones de USD)\"},\"yaxis\":{\"title\":{\"text\":\"Millones de USD\"},\"tickformat\":\",.0f\"},\"xaxis\":{\"tickfont\":{\"size\":10},\"rangeslider\":{\"visible\":true,\"thickness\":0.05},\"dtick\":\"M6\",\"tickformat\":\"%b %Y\",\"tickangle\":45},\"font\":{\"family\":\"Inter\"},\"legend\":{\"orientation\":\"h\",\"y\":-0.25,\"x\":0.5,\"xanchor\":\"center\"},\"margin\":{\"b\":120,\"t\":60},\"height\":450,\"annotations\":[{\"font\":{\"color\":\"gray\",\"size\":9},\"showarrow\":false,\"text\":\"Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile\",\"x\":0,\"xanchor\":\"left\",\"xref\":\"paper\",\"y\":-0.32,\"yref\":\"paper\"}]},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('1bea0cc7-a1be-4530-8c42-2f9551e84a52');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "grafico_multi(\n",
+    "    trazas=[\n",
+    "        (oatp,  \"OATP Total\",  \"#e74c3c\", 3,   \"solid\"),\n",
+    "        (pesos, \"En pesos\",    \"#f39c12\", 1.5, \"dash\"),\n",
+    "        (dolar, \"En dólares\",  \"#2980b9\", 1.5, \"dot\"),\n",
+    "    ],\n",
+    "    titulo=\"Otros Activos del Tesoro Público (OATP) por moneda (millones de USD)\",\n",
+    "    ytitle=\"Millones de USD\",\n",
+    ").show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "53a4d9f0",
+   "metadata": {},
+   "source": [
+    "### 🎓 Fondos para la Educación (FpE)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "696086bb",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>            <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG\"></script><script type=\"text/javascript\">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}</script>                <script type=\"text/javascript\">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>\n",
+       "        <script charset=\"utf-8\" src=\"https://cdn.plot.ly/plotly-3.3.0.min.js\" integrity=\"sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=\" crossorigin=\"anonymous\"></script>                <div id=\"b21bbbee-22b0-4992-833e-f4409a25801d\" class=\"plotly-graph-div\" style=\"height:525px; width:100%;\"></div>            <script type=\"text/javascript\">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(\"b21bbbee-22b0-4992-833e-f4409a25801d\")) {                    Plotly.newPlot(                        \"b21bbbee-22b0-4992-833e-f4409a25801d\",                        [],                        {\"template\":{\"data\":{\"histogram2dcontour\":[{\"type\":\"histogram2dcontour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"choropleth\":[{\"type\":\"choropleth\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"histogram2d\":[{\"type\":\"histogram2d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"heatmap\":[{\"type\":\"heatmap\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"contourcarpet\":[{\"type\":\"contourcarpet\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"contour\":[{\"type\":\"contour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"surface\":[{\"type\":\"surface\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"mesh3d\":[{\"type\":\"mesh3d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"parcoords\":[{\"type\":\"parcoords\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolargl\":[{\"type\":\"scatterpolargl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"scattergeo\":[{\"type\":\"scattergeo\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolar\":[{\"type\":\"scatterpolar\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"scattergl\":[{\"type\":\"scattergl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatter3d\":[{\"type\":\"scatter3d\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattermap\":[{\"type\":\"scattermap\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattermapbox\":[{\"type\":\"scattermapbox\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterternary\":[{\"type\":\"scatterternary\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattercarpet\":[{\"type\":\"scattercarpet\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}],\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}]},\"layout\":{\"autotypenumbers\":\"strict\",\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"hovermode\":\"closest\",\"hoverlabel\":{\"align\":\"left\"},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"#E5ECF6\",\"polar\":{\"bgcolor\":\"#E5ECF6\",\"angularaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"radialaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"ternary\":{\"bgcolor\":\"#E5ECF6\",\"aaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"caxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]]},\"xaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"yaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"yaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"zaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"geo\":{\"bgcolor\":\"white\",\"landcolor\":\"#E5ECF6\",\"subunitcolor\":\"white\",\"showland\":true,\"showlakes\":true,\"lakecolor\":\"white\"},\"title\":{\"x\":0.05},\"mapbox\":{\"style\":\"light\"},\"margin\":{\"b\":0,\"l\":0,\"r\":0,\"t\":30}}}},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('b21bbbee-22b0-4992-833e-f4409a25801d');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "grafico_linea(fondoeduc, \"Fondos para la Educación (FpE)\",\n",
+    "              \"Millones de USD\", color=\"rgb(243,156,18)\").show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "dc392899",
+   "metadata": {},
+   "source": [
+    "### 🗺️ Fondo de Apoyo Regional (FAPR)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "734b9748",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>            <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG\"></script><script type=\"text/javascript\">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}</script>                <script type=\"text/javascript\">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>\n",
+       "        <script charset=\"utf-8\" src=\"https://cdn.plot.ly/plotly-3.3.0.min.js\" integrity=\"sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=\" crossorigin=\"anonymous\"></script>                <div id=\"6d8c25a8-4fb2-4d8f-b20c-e0c8b5e8e761\" class=\"plotly-graph-div\" style=\"height:525px; width:100%;\"></div>            <script type=\"text/javascript\">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(\"6d8c25a8-4fb2-4d8f-b20c-e0c8b5e8e761\")) {                    Plotly.newPlot(                        \"6d8c25a8-4fb2-4d8f-b20c-e0c8b5e8e761\",                        [],                        {\"template\":{\"data\":{\"histogram2dcontour\":[{\"type\":\"histogram2dcontour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"choropleth\":[{\"type\":\"choropleth\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"histogram2d\":[{\"type\":\"histogram2d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"heatmap\":[{\"type\":\"heatmap\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"contourcarpet\":[{\"type\":\"contourcarpet\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"contour\":[{\"type\":\"contour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"surface\":[{\"type\":\"surface\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"mesh3d\":[{\"type\":\"mesh3d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"parcoords\":[{\"type\":\"parcoords\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolargl\":[{\"type\":\"scatterpolargl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"scattergeo\":[{\"type\":\"scattergeo\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolar\":[{\"type\":\"scatterpolar\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"scattergl\":[{\"type\":\"scattergl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatter3d\":[{\"type\":\"scatter3d\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattermap\":[{\"type\":\"scattermap\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattermapbox\":[{\"type\":\"scattermapbox\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterternary\":[{\"type\":\"scatterternary\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattercarpet\":[{\"type\":\"scattercarpet\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}],\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}]},\"layout\":{\"autotypenumbers\":\"strict\",\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"hovermode\":\"closest\",\"hoverlabel\":{\"align\":\"left\"},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"#E5ECF6\",\"polar\":{\"bgcolor\":\"#E5ECF6\",\"angularaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"radialaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"ternary\":{\"bgcolor\":\"#E5ECF6\",\"aaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"caxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]]},\"xaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"yaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"yaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"zaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"geo\":{\"bgcolor\":\"white\",\"landcolor\":\"#E5ECF6\",\"subunitcolor\":\"white\",\"showland\":true,\"showlakes\":true,\"lakecolor\":\"white\"},\"title\":{\"x\":0.05},\"mapbox\":{\"style\":\"light\"},\"margin\":{\"b\":0,\"l\":0,\"r\":0,\"t\":30}}}},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('6d8c25a8-4fb2-4d8f-b20c-e0c8b5e8e761');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "grafico_linea(fapr, \"Fondo de Apoyo a las Regiones (FAPR)\",\n",
+    "              \"Millones de USD\", color=\"rgb(22,160,133)\").show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5b430437",
+   "metadata": {},
+   "source": [
+    "### 🏥 Fondo para Diagnósticos y Tratamientos de Alto Costo"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "3885b0cd",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>            <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG\"></script><script type=\"text/javascript\">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}</script>                <script type=\"text/javascript\">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>\n",
+       "        <script charset=\"utf-8\" src=\"https://cdn.plot.ly/plotly-3.3.0.min.js\" integrity=\"sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=\" crossorigin=\"anonymous\"></script>                <div id=\"dfc75b71-7a94-47b4-99da-88a482e750ba\" class=\"plotly-graph-div\" style=\"height:525px; width:100%;\"></div>            <script type=\"text/javascript\">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(\"dfc75b71-7a94-47b4-99da-88a482e750ba\")) {                    Plotly.newPlot(                        \"dfc75b71-7a94-47b4-99da-88a482e750ba\",                        [],                        {\"template\":{\"data\":{\"histogram2dcontour\":[{\"type\":\"histogram2dcontour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"choropleth\":[{\"type\":\"choropleth\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"histogram2d\":[{\"type\":\"histogram2d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"heatmap\":[{\"type\":\"heatmap\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"contourcarpet\":[{\"type\":\"contourcarpet\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"contour\":[{\"type\":\"contour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"surface\":[{\"type\":\"surface\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"mesh3d\":[{\"type\":\"mesh3d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"parcoords\":[{\"type\":\"parcoords\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolargl\":[{\"type\":\"scatterpolargl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"scattergeo\":[{\"type\":\"scattergeo\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolar\":[{\"type\":\"scatterpolar\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"scattergl\":[{\"type\":\"scattergl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatter3d\":[{\"type\":\"scatter3d\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattermap\":[{\"type\":\"scattermap\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattermapbox\":[{\"type\":\"scattermapbox\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterternary\":[{\"type\":\"scatterternary\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattercarpet\":[{\"type\":\"scattercarpet\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}],\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}]},\"layout\":{\"autotypenumbers\":\"strict\",\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"hovermode\":\"closest\",\"hoverlabel\":{\"align\":\"left\"},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"#E5ECF6\",\"polar\":{\"bgcolor\":\"#E5ECF6\",\"angularaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"radialaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"ternary\":{\"bgcolor\":\"#E5ECF6\",\"aaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"caxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]]},\"xaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"yaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"yaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"zaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"geo\":{\"bgcolor\":\"white\",\"landcolor\":\"#E5ECF6\",\"subunitcolor\":\"white\",\"showland\":true,\"showlakes\":true,\"lakecolor\":\"white\"},\"title\":{\"x\":0.05},\"mapbox\":{\"style\":\"light\"},\"margin\":{\"b\":0,\"l\":0,\"r\":0,\"t\":30}}}},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('dfc75b71-7a94-47b4-99da-88a482e750ba');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "grafico_linea(tratamientoaltocosto,\n",
+    "              \"Fondo para Diagnósticos y Tratamientos de Alto Costo\",\n",
+    "              \"Millones de USD\", color=\"rgb(231,76,60)\").show()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3",
+   "path": "C:\\Users\\juanm\\AppData\\Local\\Programs\\Python\\Python314\\share\\jupyter\\kernels\\python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.14.1"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
