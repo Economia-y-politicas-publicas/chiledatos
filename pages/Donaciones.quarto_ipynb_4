@@ -25,7 +25,7 @@
         "\n",
         "---\n"
       ],
-      "id": "8b1cd144"
+      "id": "8939b44c"
     },
     {
       "cell_type": "code",
@@ -66,6 +66,7 @@
         "    df = df.sort_values(\"fecha\")\n",
         "\n",
         "except Exception as e:\n",
+        "    display(Markdown(f\"**Error al cargar datos:** `{e}`\"))\n",
         "    df = pd.DataFrame({\"fecha\": [], \"nombre\": [], \"monto\": [], \"mensaje\": []})\n",
         "\n",
         "if not df.empty:\n",

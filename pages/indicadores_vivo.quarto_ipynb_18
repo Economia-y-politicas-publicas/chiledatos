@@ -13,7 +13,7 @@
         "    page-layout: full\n",
         "---"
       ],
-      "id": "da545d1c"
+      "id": "b2eeed33"
     },
     {
       "cell_type": "code",
@@ -222,7 +222,7 @@
         "\n",
         "## Resumen"
       ],
-      "id": "bcc7e053"
+      "id": "099bceb2"
     },
     {
       "cell_type": "code",
@@ -243,7 +243,7 @@
         "html += '</div>'\n",
         "HTML(html)"
       ],
-      "id": "055f65ac",
+      "id": "053bb5ff",
       "execution_count": null,
       "outputs": []
     },
@@ -257,7 +257,7 @@
         "\n",
         "El **dólar observado** es el promedio ponderado de las operaciones del mercado cambiario formal publicado diariamente por el Banco Central."
       ],
-      "id": "a2107ea0"
+      "id": "c28559fc"
     },
     {
       "cell_type": "code",
@@ -267,7 +267,7 @@
         "              color=\"rgb(41,128,185)\", formato_y=\",.0f\", prefijo=\"$\").show()\n",
         "tabla_y_descarga(tco, \"dolar_usd_clp\", label_valor=\"CLP por USD\")"
       ],
-      "id": "a580a03b",
+      "id": "6f92a817",
       "execution_count": null,
       "outputs": []
     },
@@ -279,7 +279,7 @@
         "              color=\"rgb(52,152,219)\", formato_y=\",.0f\", prefijo=\"$\").show()\n",
         "tabla_y_descarga(euro, \"euro_clp\", label_valor=\"CLP por EUR\")"
       ],
-      "id": "223bd951",
+      "id": "c29f62ed",
       "execution_count": null,
       "outputs": []
     },
@@ -293,7 +293,7 @@
         "\n",
         "La **UF** se reajusta mensualmente según el IPC. El **IVP** se reajusta según la variación semestral móvil del IPC."
       ],
-      "id": "e0d05785"
+      "id": "48ad1cd7"
     },
     {
       "cell_type": "code",
@@ -303,7 +303,7 @@
         "              color=\"rgb(39,174,96)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
         "tabla_y_descarga(uf, \"uf_diaria\", label_valor=\"UF ($)\")"
       ],
-      "id": "f2324028",
+      "id": "53f4953e",
       "execution_count": null,
       "outputs": []
     },
@@ -315,7 +315,7 @@
         "              color=\"rgb(46,204,113)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
         "tabla_y_descarga(ivp, \"ivp_diario\", label_valor=\"IVP ($)\")"
       ],
-      "id": "e8aa6123",
+      "id": "37988b92",
       "execution_count": null,
       "outputs": []
     },
@@ -329,7 +329,7 @@
         "\n",
         "Chile es el mayor productor mundial de **cobre**, por lo que su precio tiene un impacto directo en los ingresos fiscales y el tipo de cambio."
       ],
-      "id": "b589ca62"
+      "id": "fed966d9"
     },
     {
       "cell_type": "code",
@@ -339,7 +339,7 @@
         "              color=\"rgb(211,84,0)\", formato_y=\".2f\").show()\n",
         "tabla_y_descarga(cobre, \"cobre_usd_libra\", label_valor=\"USD centavos/libra\")"
       ],
-      "id": "c6611b01",
+      "id": "540b8ee3",
       "execution_count": null,
       "outputs": []
     },
@@ -351,7 +351,7 @@
         "              color=\"rgb(243,156,18)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
         "tabla_y_descarga(oro, \"oro_usd_oz\", label_valor=\"USD/onza troy\")"
       ],
-      "id": "06d64fe4",
+      "id": "91c173e9",
       "execution_count": null,
       "outputs": []
     },
@@ -363,7 +363,7 @@
         "              color=\"rgb(149,165,166)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
         "tabla_y_descarga(plata, \"plata_usd_oz\", label_valor=\"USD/onza troy\")"
       ],
-      "id": "913f2087",
+      "id": "ab5dad85",
       "execution_count": null,
       "outputs": []
     },
@@ -375,7 +375,7 @@
         "              color=\"rgb(27,183,194)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
         "tabla_y_descarga(litio, \"litio_usd_kg\", label_valor=\"USD/kg\")"
       ],
-      "id": "47816494",
+      "id": "8720fb46",
       "execution_count": null,
       "outputs": []
     },
@@ -387,7 +387,7 @@
         "              color=\"rgb(14,190,67)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
         "tabla_y_descarga(petroleo, \"petroleo_usd_barril\", label_valor=\"USD/barril\")"
       ],
-      "id": "0995d201",
+      "id": "703ffc8f",
       "execution_count": null,
       "outputs": []
     },
@@ -401,7 +401,7 @@
         "\n",
         "La **TPM** es el principal instrumento del Banco Central para controlar la inflación. La **UTM** es una unidad tributaria usada en el sistema tributario chileno."
       ],
-      "id": "0f20c0dd"
+      "id": "1e6c4300"
     },
     {
       "cell_type": "code",
@@ -411,7 +411,7 @@
         "              color=\"rgb(142,68,173)\", formato_y=\".2f\", sufijo=\"%\").show()\n",
         "tabla_y_descarga(tpm, \"tpm\", label_valor=\"TPM (%)\")"
       ],
-      "id": "8eba11d4",
+      "id": "2189121f",
       "execution_count": null,
       "outputs": []
     },
@@ -423,7 +423,7 @@
         "              color=\"rgb(52,73,94)\", formato_y=\",.0f\", prefijo=\"$\").show()\n",
         "tabla_y_descarga(utm, \"utm\", label_valor=\"UTM ($)\")"
       ],
-      "id": "10920af6",
+      "id": "aca6f2e9",
       "execution_count": null,
       "outputs": []
     },
@@ -437,7 +437,7 @@
         "\n",
         "El **IPC** mide la variación mensual de los precios de una canasta representativa de bienes y servicios."
       ],
-      "id": "77f328c0"
+      "id": "95bfc061"
     },
     {
       "cell_type": "code",
@@ -447,7 +447,7 @@
         "              color=\"rgb(231,76,60)\", formato_y=\".2f\", sufijo=\"%\").show()\n",
         "tabla_y_descarga(ipc, \"ipc_variacion\", label_valor=\"Variación (%)\")"
       ],
-      "id": "21ad57df",
+      "id": "48dea1e0",
       "execution_count": null,
       "outputs": []
     }

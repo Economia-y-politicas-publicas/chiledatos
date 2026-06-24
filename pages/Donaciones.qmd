@@ -58,6 +58,7 @@ try:
     df = df.sort_values("fecha")
 
 except Exception as e:
+    display(Markdown(f"**Error al cargar datos:** `{e}`"))
     df = pd.DataFrame({"fecha": [], "nombre": [], "monto": [], "mensaje": []})
 
 if not df.empty:
