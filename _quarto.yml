@@ -21,6 +21,8 @@ website:
         text: Finanzas Públicas
       - href: pages/trabajo.qmd
         text: Mercado Laboral
+      - href: pages/riesgo_pais.qmd
+        text: "Riesgo País"  
       - href: pages/indicadores_vivo.qmd
         text: "📡 Indicadores en Vivo"
       - href: pages/Donaciones.qmd

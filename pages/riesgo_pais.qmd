@@ -1,0 +1,304 @@
+---
+title: "Riesgo País"
+subtitle: "EMBI Global Diversified — Serie Histórica"
+date: last-modified
+---
+
+```{python}
+#| label: setup-embi
+#| echo: false
+#| message: false
+#| warning: false
+
+
+
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+from IPython.display import Markdown, display
+
+url_embi_xls = "https://bcrdgdcprod.blob.core.windows.net/documents/entorno-internacional/documents/Serie_Historica_Spread_del_EMBI.xlsx"
+
+try:
+    df_embi = pd.read_excel(
+        url_embi_xls,
+        sheet_name=0,
+        header=1,
+        index_col=None
+    )
+
+    # Eliminar columnas Unnamed del final
+    df_embi = df_embi.loc[:, ~df_embi.columns.str.startswith("Unnamed")]
+
+    # La primera columna es la fecha (sea cual sea su nombre)
+    df_embi = df_embi.rename(columns={df_embi.columns[0]: "fecha"})
+
+    # Parsear fecha
+    df_embi["fecha"] = pd.to_datetime(df_embi["fecha"], errors="coerce")
+    df_embi = df_embi.replace("N/A", float("nan"))
+
+    # Convertir a numérico
+    cols_numericas = [c for c in df_embi.columns if c != "fecha"]
+    df_embi[cols_numericas] = df_embi[cols_numericas].apply(pd.to_numeric, errors="coerce")
+
+    # Limpiar y ordenar
+    df_embi = df_embi.dropna(subset=["fecha"]).sort_values("fecha").reset_index(drop=True)
+
+    # Series derivadas
+    df_chile = df_embi[["fecha", "Chile"]].dropna()
+    paises   = ["Chile", "Brasil", "Colombia", "México", "Perú", "Argentina"]
+    df_latam = df_embi[["fecha"] + paises].copy()
+
+    ultimo_valor = df_chile["Chile"].iloc[-1]
+    ultima_fecha = df_chile["fecha"].iloc[-1].strftime("%d/%m/%Y")
+
+except Exception as e:
+    display(Markdown(f"**Error al cargar datos:** `{e}`"))
+    df_embi      = pd.DataFrame()
+    df_chile     = pd.DataFrame({"fecha": [], "Chile": []})
+    df_latam     = pd.DataFrame()
+    paises       = []
+    ultimo_valor = None
+    ultima_fecha = "Sin datos"
+
+
+# --- Tabla: últimos 10 días ---
+if not df_embi.empty:
+    paises_tabla = ["Chile", "Brasil", "Colombia", "México", "Perú", "Argentina"]
+    df_tabla_embi = df_embi[["fecha"] + paises_tabla].dropna(subset=["Chile"]).tail(10).copy()
+    df_tabla_embi = df_tabla_embi.sort_values("fecha", ascending=False)
+    df_tabla_embi["fecha"] = df_tabla_embi["fecha"].dt.strftime("%d/%m/%Y")
+
+    tabla_md = "| Fecha | Chile | Brasil | Colombia | México | Perú | Argentina |\n"
+    tabla_md += "|:---|:---:|:---:|:---:|:---:|:---:|:---:|\n"
+    for _, row in df_tabla_embi.iterrows():
+        def fmt(v):
+            return f"{v:.2f}%" if pd.notna(v) else "—"
+        tabla_md += (
+            f"| {row['fecha']} "
+            f"| {fmt(row['Chile'])} "
+            f"| {fmt(row['Brasil'])} "
+            f"| {fmt(row['Colombia'])} "
+            f"| {fmt(row['México'])} "
+            f"| {fmt(row['Perú'])} "
+            f"| {fmt(row['Argentina'])} |\n"
+        )
+
+    display(Markdown("### Últimos Datos por País"))
+    display(Markdown(tabla_md))
+```
+
+```{python}
+#| echo: false
+
+# --- KPIs ---
+if ultimo_valor is not None:
+    display(Markdown(f"""
+> **Último dato ({ultima_fecha}):** EMBI Chile = **{ultimo_valor:.2f}%**
+"""))
+```
+
+```{python}
+#| echo: false
+
+
+
+# --- Gráfico 1: Serie histórica Chile ---
+if not df_chile.empty:
+    fig1 = go.Figure()
+
+    fig1.add_trace(
+        go.Scatter(
+            x=df_chile["fecha"],
+            y=df_chile["Chile"],
+            mode="lines",
+            name="EMBI Chile",
+            line=dict(color="#c0392b", width=2),
+            fill="tozeroy",
+            fillcolor="rgba(192, 57, 43, 0.08)",
+            hovertemplate="<b>%{x|%d %b %Y}</b><br>EMBI Chile: %{y:.2f}%<extra></extra>",
+        )
+    )
+
+    fig1.update_layout(
+        title=dict(
+            text="EMBI Chile — Serie Histórica Completa",
+            x=0.5, xanchor="center", font=dict(size=18)
+        ),
+        template="plotly_white",
+        font_family="Inter",
+        height=420,
+        autosize=True,
+        hovermode="x unified",
+        yaxis=dict(
+            title="Spread (%)", tickformat=".2f",
+            gridcolor="rgba(0,0,0,0.08)", zeroline=False, rangemode="tozero"
+        ),
+        xaxis=dict(
+            tickformat="%Y", showgrid=False,
+            rangeslider=dict(visible=True)
+        ),
+        margin=dict(l=70, r=40, t=80, b=60)
+    )
+
+    fig1.show(config={"displayModeBar": True})
+else:
+    display(Markdown("_No hay datos disponibles._"))
+```
+
+```{python}
+#| echo: false
+
+
+# --- Gráfico 2: Comparación todos los países ---
+if not df_embi.empty:
+    paises_todos = [c for c in df_embi.columns if c != "fecha"]
+
+    # Paleta de alto contraste, colores bien diferenciados
+    paleta = {
+        "Global":       "#1f77b4",
+        "LATINO":       "#ff7f0e",
+        "REP DOM":      "#2ca02c",
+        "Argentina":    "#27d3d6",
+        "Bolivia":      "#9467bd",
+        "Brasil":       "#8c564b",
+        "Chile":        "#e377c2",
+        "Colombia":     "#7f7f7f",
+        "Costa Rica":   "#bcbd22",
+        "Ecuador":      "#cfc917",
+        "El Salvador":  "#aec7e8",
+        "Guatemala":    "#ffbb78",
+        "Honduras":     "#98df8a",
+        "México":       "#ff9896",
+        "Paraguay":     "#c5b0d5",
+        "Perú":         "#c49c94",
+        "Panamá":       "#f7b6d2",
+        "Uruguay":      "#dbdb8d",
+        "Venezuela":    "#c7c7c7",  # gris — oculto por defecto
+        "RD-LATINO":    "#9edae5",
+    }
+
+    # Países que se ocultan por defecto por distorsionar la escala
+    ocultos = {"Venezuela", "RD-LATINO", "Honduras", "Guatemala", "Bolivia", "Costa Rica", "El Salvador", "Paraguay", "Perú", "Panamá","Uruguay" }
+
+    fig2 = go.Figure()
+
+    for pais in paises_todos:
+        serie = df_embi[["fecha", pais]].dropna()
+        if not serie.empty:
+            fig2.add_trace(
+                go.Scatter(
+                    x=serie["fecha"],
+                    y=serie[pais],
+                    mode="lines",
+                    name=pais,
+                    visible="legendonly" if pais in ocultos else True,
+                    line=dict(
+                        color=paleta.get(pais, "#333333"),
+                        width=2.5
+                    ),
+                    hovertemplate=f"<b>%{{x|%d %b %Y}}</b><br>{pais}: %{{y:.2f}}%<extra></extra>",
+                )
+            )
+
+    fig2.update_layout(
+        title=dict(
+            text="Comparación EMBI — Todos los Países",
+            x=0.5,
+            xanchor="center",
+            font=dict(size=18),
+            y=0.9           # título bien arriba
+        ),
+        template="plotly_white",
+        font_family="Inter",
+        height=560,
+        autosize=True,
+        hovermode="x unified",
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-1,         # leyenda debajo del gráfico
+            xanchor="center",
+            x=0.5,
+            font=dict(size=11)
+        ),
+        yaxis=dict(
+            title="Spread (%)",
+            tickformat=".2f",
+            gridcolor="rgba(0,0,0,0.08)",
+            zeroline=False,
+            rangemode="tozero"
+        ),
+        xaxis=dict(
+            tickformat="%b %Y",
+            showgrid=False,
+            rangeslider=dict(visible=True)
+        ),
+        margin=dict(l=70, r=40, t=120, b=120)  # más espacio abajo para leyenda
+    )
+
+    fig2.show(config={"displayModeBar": True})
+```
+
+```{python}
+#| echo: false
+
+
+# --- Gráfico 3: Último valor por país (barras horizontales) ---
+if not df_embi.empty:
+    colores = {
+        "Chile":     "#c0392b",
+        "Brasil":    "#2980b9",
+        "Colombia":  "#27ae60",
+        "México":    "#e67e22",
+        "Perú":      "#8e44ad",
+        "Argentina": "#2c3e50",
+    }
+
+    paises_bar = ["Chile", "Brasil", "Colombia", "México", "Perú", "Argentina"]
+    ultimos = {}
+    for pais in paises_bar:
+        if pais in df_embi.columns:
+            serie = df_embi[["fecha", pais]].dropna()
+            if not serie.empty:
+                ultimos[pais] = serie[pais].iloc[-1]
+
+    df_bar = pd.DataFrame(
+        list(ultimos.items()), columns=["pais", "embi"]
+    ).sort_values("embi")
+
+    colores_bar = [colores.get(p, "#888") for p in df_bar["pais"]]
+
+    fig3 = go.Figure()
+    fig3.add_trace(
+        go.Bar(
+            x=df_bar["embi"],
+            y=df_bar["pais"],
+            orientation="h",
+            marker_color=colores_bar,
+            hovertemplate="<b>%{y}</b><br>EMBI: %{x:.2f}%<extra></extra>",
+            text=df_bar["embi"].apply(lambda v: f"{v:.2f}%"),
+            textposition="inside",
+            textfont=dict(color="white", size=13)
+        )
+    )
+
+    fig3.update_layout(
+        title=dict(
+            text="EMBI por País — Último Dato Disponible",
+            x=0.5, xanchor="center", font=dict(size=18)
+        ),
+        template="plotly_white",
+        font_family="Inter",
+        height=380,
+        autosize=True,
+        xaxis=dict(
+            title="Spread (%)", tickformat=".2f",
+            gridcolor="rgba(0,0,0,0.08)", zeroline=False
+        ),
+        yaxis=dict(showgrid=False),
+        margin=dict(l=90, r=80, t=80, b=50)
+    )
+
+    fig3.show(config={"displayModeBar": True})
+```
