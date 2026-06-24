@@ -1,3 +1,4 @@
+
 ---
 title: "Apoya este proyecto"
 subtitle: "Donaciones para mantener y mejorar la plataforma"
@@ -19,9 +20,8 @@ Este proyecto se mantiene gracias al tiempo libre y al apoyo de la comunidad. Si
 
 ---
 
-## Transparencia de Aportes
 
-A continuación se muestra la evolución de los aportes recibidos a lo largo del tiempo. Todo lo recaudado se reinvierte directamente en el proyecto.
+
 
 ```{python}
 #| label: setup-donaciones
@@ -31,90 +31,99 @@ A continuación se muestra la evolución de los aportes recibidos a lo largo del
 
 import pandas as pd
 import plotly.graph_objects as go
-from IPython.display import Markdown
+from IPython.display import Markdown, display
 
-# URL de tu futuro archivo CSV en GitHub (ajusta si la ruta es distinta)
-url_csv = "[https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/donaciones.csv](https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/donaciones.csv)"
+# URL de exportación directa a CSV de tu Google Sheet
+url_csv = "https://docs.google.com/spreadsheets/d/13w-D7T8BiIAueFALpnZBLFEQxsDdTvjw0FCb4iqdeIc/export?format=csv&gid=0"
 
 try:
-    # Intentar leer el CSV real
     df = pd.read_csv(url_csv)
-    df["fecha"] = pd.to_datetime(df["fecha"])
-    df = df.sort_values("fecha")
-except:
-    # Datos de prueba temporales mientras creas el CSV real
-    df = pd.DataFrame({
-        "fecha": pd.to_datetime(["2026-06-01", "2026-06-15", "2026-06-20"]),
-        "nombre": ["Usuario Anónimo", "María Gómez", "Carlos Ruiz"],
-        "monto": [5000, 15000, 10000],
-        "mensaje": ["Excelente trabajo", "Para el servidor", ""]
+    df.columns = df.columns.str.strip()
+
+    if 'Unnamed: 0' in df.columns:
+        df = df.drop(columns=['Unnamed: 0'])
+
+    df = df.rename(columns={
+        "Nombre": "nombre",
+        "Aporte": "monto",
+        "Fecha": "fecha",
+        "Mensaje": "mensaje"
     })
 
-# Calcular el acumulado en el tiempo
-df["acumulado"] = df["monto"].cumsum()
+    if "mensaje" not in df.columns:
+        df["mensaje"] = ""
 
-# Extraer datos clave
-total_recaudado = df["monto"].sum()
-ultimo_monto = df["acumulado"].iloc[-1]
+    df["monto"] = df["monto"].astype(str).str.replace(",", "").str.replace("$", "").astype(float)
+    df["fecha"] = pd.to_datetime(df["fecha"], format="%d/%m/%Y")
+    df = df.sort_values("fecha")
 
-#| echo: false
+except Exception as e:
+    df = pd.DataFrame({"fecha": [], "nombre": [], "monto": [], "mensaje": []})
 
-fig = go.Figure()
+if not df.empty:
+    df["acumulado"] = df["monto"].cumsum()
+    total_recaudado = df["monto"].sum()
+else:
+    total_recaudado = 0
 
-fig.add_trace(
-    go.Scatter(
-        x=df["fecha"],
-        y=df["acumulado"],
-        mode="lines+markers",
-        name="Acumulado",
-        line=dict(color="#27ae60", width=3, shape="hv"), # shape="hv" hace que parezca una escalera (step chart)
-        marker=dict(size=8, color="#27ae60"),
-        fill="tozeroy",
-        fillcolor="rgba(39, 174, 96, 0.1)",
-        hovertemplate="<b>%{x|%d %b %Y}</b><br>Total acumulado: $%{y:,.0f}<extra></extra>",
+# --- Gráfico ---
+if total_recaudado > 0:
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=df["fecha"],
+            y=df["acumulado"],
+            mode="lines+markers",
+            name="Acumulado",
+            line=dict(color="#27ae60", width=3, shape="hv"),
+            marker=dict(size=8, color="#27ae60"),
+            fill="tozeroy",
+            fillcolor="rgba(39, 174, 96, 0.1)",
+            hovertemplate="%{x|%d %b %Y}Total acumulado: $%{y:,.0f}",
+        )
     )
-)
 
-fig.update_layout(
-    title=dict(
-        text=f"Total Histórico Recaudado: ${total_recaudado:,.0f}",
-        x=0.5,
-        xanchor="center",
-        font=dict(size=18)
-    ),
-    template="plotly_white",
-    font_family="Inter",
-    height=400,
-    autosize=True,
-    hovermode="x unified",
-    yaxis=dict(
-        title="CLP ($)",
-        tickformat=",.0f",
-        gridcolor="rgba(0,0,0,0.08)",
-        zeroline=False,
-        rangemode="tozero"
-    ),
-    xaxis=dict(
-        tickformat="%d %b %Y",
-        showgrid=False
-    ),
-    margin=dict(l=70, r=40, t=80, b=50)
-)
+    fig.update_layout(
+        title=dict(
+            text=f"Total Histórico Recaudado: ${total_recaudado:,.0f}",
+            x=0.5,
+            xanchor="center",
+            font=dict(size=18)
+        ),
+        template="plotly_white",
+        font_family="Inter",
+        height=400,
+        autosize=True,
+        hovermode="x unified",
+        yaxis=dict(
+            title="CLP ($)",
+            tickformat=",.0f",
+            gridcolor="rgba(0,0,0,0.08)",
+            zeroline=False,
+            rangemode="tozero"
+        ),
+        xaxis=dict(
+            tickformat="%d %b %Y",
+            showgrid=False
+        ),
+        margin=dict(l=70, r=40, t=80, b=50)
+    )
 
-fig.show(config={'displayModeBar': False})
+    fig.show(config={'displayModeBar': False})
+else:
+    display(Markdown("_Aún no hay aportes registrados._"))
 
-#| echo: false
-# Generar una tabla Markdown limpia con los datos recientes invertidos (los más nuevos arriba)
-df_tabla = df.sort_values("fecha", ascending=False).copy()
-df_tabla["fecha_str"] = df_tabla["fecha"].dt.strftime("%d/%m/%Y")
-df_tabla["monto_str"] = df_tabla["monto"].apply(lambda x: f"${x:,.0f}")
+# --- Tabla ---
+if total_recaudado > 0:
+    df_tabla = df.sort_values("fecha", ascending=False).copy()
+    df_tabla["fecha_str"] = df_tabla["fecha"].dt.strftime("%d/%m/%Y")
+    df_tabla["monto_str"] = df_tabla["monto"].apply(lambda x: f"${x:,.0f}")
+    df_tabla["mensaje"] = df_tabla["mensaje"].fillna("")
 
-# Reemplazar NaN en mensajes por string vacío
-df_tabla["mensaje"] = df_tabla["mensaje"].fillna("")
+    tabla_md = "| Fecha | Nombre | Monto | Mensaje |\n|:---|:---|:---|:---|\n"
+    for _, row in df_tabla.iterrows():
+        tabla_md += f"| {row['fecha_str']} | {row['nombre']} | {row['monto_str']} | {row['mensaje']} |\n"
 
-tabla_md = "| Fecha | Nombre | Monto | Mensaje |\n|:---|:---|:---|:---|\n"
-for _, row in df_tabla.iterrows():
-    tabla_md += f"| {row['fecha_str']} | {row['nombre']} | {row['monto_str']} | {row['mensaje']} |\n"
-
-Markdown(tabla_md)
-
+    display(Markdown(tabla_md))
+```
