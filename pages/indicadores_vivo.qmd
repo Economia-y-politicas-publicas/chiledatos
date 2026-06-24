@@ -12,34 +12,31 @@ format:
 #| include: false
 
 import os
+import base64
 import requests
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+from IPython.display import HTML
 
-usuario = os.environ.get("BCENTRAL_USER")
+usuario  = os.environ.get("BCENTRAL_USER")
 password = os.environ.get("BCENTRAL_PASS")
-
-URL_API = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
+URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
 
 def obtener_serie(codigo, dias=365):
-    hoy = datetime.today()
+    hoy    = datetime.today()
     inicio = (hoy - timedelta(days=dias)).strftime("%Y-%m-%d")
-    fin = hoy.strftime("%Y-%m-%d")
+    fin    = hoy.strftime("%Y-%m-%d")
     params = {
-        "user": usuario,
-        "pass": password,
-        "function": "GetSeries",
-        "timeseries": codigo,
-        "firstdate": inicio,
-        "lastdate": fin,
-        "format": "json",
+        "user": usuario, "pass": password,
+        "function": "GetSeries", "timeseries": codigo,
+        "firstdate": inicio, "lastdate": fin, "format": "json",
     }
     try:
-        r = requests.get(URL_API, params=params, timeout=10)
+        r    = requests.get(URL_API, params=params, timeout=10)
         data = r.json()
-        obs = data["Series"]["Obs"]
-        df = pd.DataFrame(obs)
+        obs  = data["Series"]["Obs"]
+        df   = pd.DataFrame(obs)
         col_fecha = "indexDateString" if "indexDateString" in df.columns else df.columns[0]
         col_valor = "value" if "value" in df.columns else df.columns[1]
         df["fecha"] = pd.to_datetime(df[col_fecha], format="%d-%m-%Y", errors="coerce")
@@ -53,7 +50,7 @@ def grafico_linea(df, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo
     if df.empty:
         return go.Figure()
     ultimo = df["valor"].iloc[-1]
-    fecha = df["fecha"].iloc[-1].strftime("%d/%m/%Y")
+    fecha  = df["fecha"].iloc[-1].strftime("%d/%m/%Y")
     minimo = df["valor"].min()
     maximo = df["valor"].max()
     margen = (maximo - minimo) * 0.05
@@ -79,30 +76,17 @@ def grafico_linea(df, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo
             x=0, y=-0.3, xref="paper", yref="paper",
             showarrow=False, font=dict(size=9, color="gray"), xanchor="left",
         )],
-        # ── Botones de eje ──────────────────────────────────────────
         updatemenus=[dict(
-            type="buttons",
-            direction="right",
+            type="buttons", direction="right",
             x=1, y=1.15, xanchor="right", yanchor="top",
             buttons=[
-                dict(
-                    label="Eje ajustado",
-                    method="relayout",
-                    args=[{"yaxis.range": [minimo - margen, maximo + margen],
-                           "yaxis.autorange": False}],
-                ),
-                dict(
-                    label="Eje desde 0",
-                    method="relayout",
-                    args=[{"yaxis.range": [0, maximo + margen],
-                           "yaxis.autorange": False}],
-                ),
+                dict(label="Eje ajustado", method="relayout",
+                     args=[{"yaxis.range": [minimo - margen, maximo + margen], "yaxis.autorange": False}]),
+                dict(label="Eje desde 0", method="relayout",
+                     args=[{"yaxis.range": [0, maximo + margen], "yaxis.autorange": False}]),
             ],
-            showactive=True,
-            bgcolor="rgba(255,255,255,0.9)",
-            bordercolor="#ccc",
-            borderwidth=1,
-            font=dict(size=11),
+            showactive=True, bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#ccc", borderwidth=1, font=dict(size=11),
         )],
     )
     return fig
@@ -110,30 +94,56 @@ def grafico_linea(df, titulo, ytitle, color, formato_y=".2f", prefijo="", sufijo
 def variacion(df):
     if len(df) < 2:
         return 0, "gray"
-    v = ((df["valor"].iloc[-1] - df["valor"].iloc[-2]) / df["valor"].iloc[-2]) * 100
+    v     = ((df["valor"].iloc[-1] - df["valor"].iloc[-2]) / df["valor"].iloc[-2]) * 100
     color = "#2ecc71" if v >= 0 else "#e74c3c"
     return v, color
 
-ultima_actualizacion = datetime.today().strftime("%d/%m/%Y %H:%M")
+def tabla_y_descarga(df, nombre_archivo, col_fecha="fecha", col_valor="valor",
+                     label_fecha="Fecha", label_valor="Valor"):
+    if df.empty:
+        return HTML("<p style='color:gray;font-size:.85rem'>Sin datos disponibles.</p>")
 
-tco   = obtener_serie("F073.TCO.PRE.Z.D")
-uf    = obtener_serie("F073.UFF.PRE.Z.D")
-ivp   = obtener_serie("F073.IVP.PRE.Z.D")
-euro  = obtener_serie("F072.CLP.EUR.N.O.D")
-oro   = obtener_serie("F019.PPB.PRE.44.D")
-plata = obtener_serie("F019.PPB.PRE.45.D")
-cobre = obtener_serie("F019.PPB.PRE.100.D")
-litio = obtener_serie("F019.PPB.PRE.37.D")
-petroleo = obtener_serie("F019.PPB.PRE.41.D")
+    # Preparar tabla
+    df_tabla = df[[col_fecha, col_valor]].copy()
+    df_tabla[col_fecha] = df_tabla[col_fecha].dt.strftime("%d/%m/%Y")
+    df_tabla.columns    = [label_fecha, label_valor]
+    df_tabla            = df_tabla.sort_values(label_fecha, ascending=False)
 
-ipc   = obtener_serie("F074.IPC.IND.Z.EP09.C.M", dias=1095)
-tpm   = obtener_serie("F022.TPM.TIN.D001.NO.Z.M", dias=1095)
-utm   = obtener_serie("F073.UTR.PRE.Z.M", dias=1095)
+    tabla_html = df_tabla.to_html(
+        index=False,
+        classes="table table-sm table-striped table-hover",
+        border=0,
+    )
+
+    # Botón descarga CSV
+    csv = df_tabla.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()
+    boton = f'''
+    <a href="data:text/csv;base64,{b64}"
+       download="{nombre_archivo}.csv"
+       class="btn btn-sm btn-outline-secondary"
+       style="margin-bottom:.75rem;">
+       ⬇ Descargar CSV
+    </a>'''
+
+    return HTML(f"""
+    <details style="margin-top:.5rem; margin-bottom:1.5rem;">
+      <summary style="cursor:pointer; color:#3498db; font-size:.9rem; margin-bottom:.5rem;">
+        📋 Ver tabla de datos
+      </summary>
+      <div style="margin-top:.5rem;">
+        {boton}
+        <div style="max-height:280px; overflow-y:auto; font-size:.85rem;">
+          {tabla_html}
+        </div>
+      </div>
+    </details>
+    """)
 
 def tarjeta(nombre, df, prefijo="", sufijo="", formato=",.0f"):
     if df.empty:
         return f'<div class="ind-card"><div class="ind-name">{nombre}</div><div class="ind-value">N/D</div></div>'
-    val = df["valor"].iloc[-1]
+    val   = df["valor"].iloc[-1]
     fecha = df["fecha"].iloc[-1].strftime("%d/%m/%Y")
     var, color = variacion(df)
     flecha = "▲" if var >= 0 else "▼"
@@ -144,6 +154,21 @@ def tarjeta(nombre, df, prefijo="", sufijo="", formato=",.0f"):
   <div class="ind-var" style="color:{color}">{flecha} {abs(var):.2f}%</div>
   <div class="ind-fecha">{fecha}</div>
 </div>"""
+
+ultima_actualizacion = datetime.today().strftime("%d/%m/%Y %H:%M")
+
+tco      = obtener_serie("F073.TCO.PRE.Z.D")
+uf       = obtener_serie("F073.UFF.PRE.Z.D")
+ivp      = obtener_serie("F073.IVP.PRE.Z.D")
+euro     = obtener_serie("F072.CLP.EUR.N.O.D")
+oro      = obtener_serie("F019.PPB.PRE.44.D")
+plata    = obtener_serie("F019.PPB.PRE.45.D")
+cobre    = obtener_serie("F019.PPB.PRE.100.D")
+litio    = obtener_serie("F019.PPB.PRE.37.D")
+petroleo = obtener_serie("F019.PPB.PRE.41.D")
+ipc      = obtener_serie("F074.IPC.IND.Z.EP09.C.M", dias=1095)
+tpm      = obtener_serie("F022.TPM.TIN.D001.NO.Z.M", dias=1095)
+utm      = obtener_serie("F073.UTR.PRE.Z.M", dias=1095)
 ```
 
 ```{=html}
@@ -166,28 +191,10 @@ def tarjeta(nombre, df, prefijo="", sufijo="", formato=",.0f"):
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
-.ind-name {
-  font-size: .8rem;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-  opacity: .6;
-  margin-bottom: .4rem;
-}
-.ind-value {
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: -1px;
-  margin-bottom: .3rem;
-}
-.ind-var {
-  font-size: .9rem;
-  font-weight: 600;
-}
-.ind-fecha {
-  font-size: .75rem;
-  opacity: .45;
-  margin-top: .3rem;
-}
+.ind-name  { font-size:.8rem; text-transform:uppercase; letter-spacing:.5px; opacity:.6; margin-bottom:.4rem; }
+.ind-value { font-size:1.6rem; font-weight:700; letter-spacing:-1px; margin-bottom:.3rem; }
+.ind-var   { font-size:.9rem; font-weight:600; }
+.ind-fecha { font-size:.75rem; opacity:.45; margin-top:.3rem; }
 </style>
 ```
 
@@ -199,19 +206,17 @@ Los datos se actualizan automáticamente de lunes a viernes desde la API del Ban
 
 ```{python}
 #| echo: false
-from IPython.display import HTML
-
 html = '<div class="ind-grid">'
-html += tarjeta("Dólar USD", tco, prefijo="$", formato=",.0f")
-html += tarjeta("Euro", euro, prefijo="$", formato=",.0f")
-html += tarjeta("UF", uf, prefijo="$", formato=",.2f")
-html += tarjeta("UTM", utm, prefijo="$", formato=",.0f")
-html += tarjeta("TPM", tpm, sufijo="%", formato=".1f")
-html += tarjeta("Cobre", cobre, sufijo=" ¢/lb", formato=".2f")
-html += tarjeta("Oro", oro, prefijo="$", sufijo=" oz", formato=",.2f")
-html += tarjeta("Plata", plata, prefijo="$", sufijo=" oz", formato=",.2f")
-html += tarjeta("Litio", litio, prefijo="$", sufijo=" oz", formato=",.2f")
-html += tarjeta("Petroleo", petroleo, prefijo="$", sufijo=" barril", formato=",.2f")
+html += tarjeta("Dólar USD", tco,      prefijo="$",  formato=",.0f")
+html += tarjeta("Euro",      euro,     prefijo="$",  formato=",.0f")
+html += tarjeta("UF",        uf,       prefijo="$",  formato=",.2f")
+html += tarjeta("UTM",       utm,      prefijo="$",  formato=",.0f")
+html += tarjeta("TPM",       tpm,      sufijo="%",   formato=".1f")
+html += tarjeta("Cobre",     cobre,    sufijo=" ¢/lb", formato=".2f")
+html += tarjeta("Oro",       oro,      prefijo="$",  sufijo=" oz",    formato=",.2f")
+html += tarjeta("Plata",     plata,    prefijo="$",  sufijo=" oz",    formato=",.2f")
+html += tarjeta("Litio",     litio,    prefijo="$",  sufijo=" kg",    formato=",.2f")
+html += tarjeta("Petróleo",  petroleo, prefijo="$",  sufijo=" barril", formato=",.2f")
 html += '</div>'
 HTML(html)
 ```
@@ -220,99 +225,100 @@ HTML(html)
 
 ## 💵 Tipos de Cambio
 
-Los tipos de cambio reflejan el valor relativo entre monedas. El **dólar observado** es el promedio ponderado de las operaciones del mercado cambiario formal publicado diariamente por el Banco Central.
+El **dólar observado** es el promedio ponderado de las operaciones del mercado cambiario formal publicado diariamente por el Banco Central.
 
 ```{python}
 grafico_linea(tco, "Dólar observado USD/CLP", "CLP por USD",
               color="rgb(41,128,185)", formato_y=",.0f", prefijo="$").show()
+tabla_y_descarga(tco, "dolar_usd_clp", label_valor="CLP por USD")
 ```
 
 ```{python}
 grafico_linea(euro, "Euro EUR/CLP", "CLP por EUR",
               color="rgb(52,152,219)", formato_y=",.0f", prefijo="$").show()
+tabla_y_descarga(euro, "euro_clp", label_valor="CLP por EUR")
 ```
 
 ---
 
 ## 📊 Unidades de Reajuste
 
-La **UF (Unidad de Fomento)** y el **IVP (Índice de Valor Promedio)** son unidades de cuenta reajustables según la inflación, usadas en contratos hipotecarios, arriendos y otros instrumentos financieros.
-
-
-La Unidad de Fomento (UF) es un índice de reajustabilidad, calculado y autorizado por el Banco Central de Chile (Banco), para las operaciones de crédito de dinero en moneda nacional que efectúen las empresas bancarias y las cooperativas de ahorro y crédito. Para fines del cálculo de este índice, el valor de la UF se reajusta a partir del día diez de cada mes y hasta el día nueve del mes siguiente, en forma diaria, de acuerdo a la variación experimentada por el Índice de Precios al Consumidor (IPC) que determina el Instituto Nacional de Estadísticas (INE) o el organismo que lo reemplace en el mes calendario inmediatamente anterior al período para el cual la UF se calcula y publica. 
-
+La **UF** se reajusta mensualmente según el IPC. El **IVP** se reajusta según la variación semestral móvil del IPC.
 
 ```{python}
 grafico_linea(uf, "Unidad de Fomento (UF)", "Pesos chilenos",
               color="rgb(39,174,96)", formato_y=",.2f", prefijo="$").show()
+tabla_y_descarga(uf, "uf_diaria", label_valor="UF ($)")
 ```
-
-
-El Índice de Valor Promedio (IVP) es un índice de reajustabilidad, calculado y autorizado por el Banco Central de Chile (Banco), para las operaciones de crédito de dinero en moneda nacional que efectúen las empresas bancarias y las cooperativas de ahorro y crédito. Para fines del cálculo de este índice, el valor del IVP se reajusta a partir del día diez de cada mes y hasta el día nueve del mes siguiente, en forma diaria, de acuerdo a la variación experimentada por el Índice de Precios al Consumidor (IPC) que determina el Instituto Nacional de Estadísticas (INE) o el organismo que lo reemplace en variación semestral móvil inmediatamente anterior al período para el cual el IVP se calcula y publica. 
-
-
 
 ```{python}
 grafico_linea(ivp, "Índice de Valor Promedio (IVP)", "Pesos chilenos",
               color="rgb(46,204,113)", formato_y=",.2f", prefijo="$").show()
+tabla_y_descarga(ivp, "ivp_diario", label_valor="IVP ($)")
 ```
 
 ---
 
 ## 🪙 Materias Primas
 
-Chile es el mayor productor mundial de **cobre**, por lo que su precio tiene un impacto directo en los ingresos fiscales y el tipo de cambio. El oro y la plata son referencias internacionales de valor.
+Chile es el mayor productor mundial de **cobre**, por lo que su precio tiene un impacto directo en los ingresos fiscales y el tipo de cambio.
 
 ```{python}
 grafico_linea(cobre, "Cobre (centavos de dólar por libra)", "USD centavos/libra",
               color="rgb(211,84,0)", formato_y=".2f").show()
+tabla_y_descarga(cobre, "cobre_usd_libra", label_valor="USD centavos/libra")
 ```
 
 ```{python}
 grafico_linea(oro, "Oro (dólares por onza troy)", "USD/onza troy",
               color="rgb(243,156,18)", formato_y=",.2f", prefijo="$").show()
+tabla_y_descarga(oro, "oro_usd_oz", label_valor="USD/onza troy")
 ```
 
 ```{python}
 grafico_linea(plata, "Plata (dólares por onza troy)", "USD/onza troy",
               color="rgb(149,165,166)", formato_y=",.2f", prefijo="$").show()
+tabla_y_descarga(plata, "plata_usd_oz", label_valor="USD/onza troy")
 ```
 
 ```{python}
 grafico_linea(litio, "Litio (dólares por kilo)", "USD/kg",
-              color="rgb(27, 183, 194)", formato_y=",.2f", prefijo="$").show()
+              color="rgb(27,183,194)", formato_y=",.2f", prefijo="$").show()
+tabla_y_descarga(litio, "litio_usd_kg", label_valor="USD/kg")
 ```
 
 ```{python}
 grafico_linea(petroleo, "Petróleo WTI (dólares por barril)", "USD/barril",
-              color="rgb(14, 190, 67)", formato_y=",.2f", prefijo="$").show()
+              color="rgb(14,190,67)", formato_y=",.2f", prefijo="$").show()
+tabla_y_descarga(petroleo, "petroleo_usd_barril", label_valor="USD/barril")
 ```
-
-
 
 ---
 
 ## 🏦 Tasas e Indicadores Monetarios
 
-La **Tasa de Política Monetaria (TPM)** es el principal instrumento del Banco Central para controlar la inflación. La **UTM** es una unidad tributaria usada para expresar multas y valores en el sistema tributario chileno.
+La **TPM** es el principal instrumento del Banco Central para controlar la inflación. La **UTM** es una unidad tributaria usada en el sistema tributario chileno.
 
 ```{python}
 grafico_linea(tpm, "Tasa de Política Monetaria (TPM)", "Porcentaje (%)",
               color="rgb(142,68,173)", formato_y=".2f", sufijo="%").show()
+tabla_y_descarga(tpm, "tpm", label_valor="TPM (%)")
 ```
 
 ```{python}
 grafico_linea(utm, "Unidad Tributaria Mensual (UTM)", "Pesos chilenos",
               color="rgb(52,73,94)", formato_y=",.0f", prefijo="$").show()
+tabla_y_descarga(utm, "utm", label_valor="UTM ($)")
 ```
 
 ---
 
 ## 📈 Inflación
 
-El **IPC (Índice de Precios al Consumidor)** mide la variación mensual de los precios de una canasta representativa de bienes y servicios. Es el principal indicador de inflación en Chile.
+El **IPC** mide la variación mensual de los precios de una canasta representativa de bienes y servicios.
 
 ```{python}
 grafico_linea(ipc, "Variación anual IPC (%)", "Variación (%)",
               color="rgb(231,76,60)", formato_y=".2f", sufijo="%").show()
+tabla_y_descarga(ipc, "ipc_variacion", label_valor="Variación (%)")
 ```
