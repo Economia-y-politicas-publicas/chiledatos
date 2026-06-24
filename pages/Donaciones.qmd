@@ -8,12 +8,12 @@ date: last-modified
 Este proyecto se mantiene gracias al tiempo libre y al apoyo de la comunidad. Si la información y los gráficos te han sido útiles, puedes ayudar a cubrir los costos de servidores y desarrollo con un aporte voluntario.
 
 ::: {.callout-note icon=false title="Datos para Transferencia Bancaria"}
-* **Banco:** BancoEstado (Ejemplo)
-* **Tipo de Cuenta:** Cuenta Corriente / Cuenta RUT
-* **Número de Cuenta:** 123456789
-* **RUT:** 11.222.333-4
-* **Nombre:** Tu Nombre Aquí
-* **Correo:** tu.correo@ejemplo.cl
+* **Banco:** Bci / Banco Crédito e Inversiones
+* **Tipo de Cuenta:** Cuenta Vista
+* **Número de Cuenta:** 777018635595
+* **RUT:** 18.635.595-4
+* **Nombre:** Juan Enrique Miguieles Onetto
+* **Correo:** economiapp.contacto@gmail.com
 
 *Por favor, incluye tu nombre o alias en el mensaje de la transferencia para agregarte al registro de aportes (puedes indicar si prefieres ser anónimo).*
 :::
@@ -114,6 +114,51 @@ if total_recaudado > 0:
     fig.show(config={'displayModeBar': False})
 else:
     display(Markdown("_Aún no hay aportes registrados._"))
+
+
+# --- Gráfico de barras: aportes por día ---
+if total_recaudado > 0:
+    df_diario = df.groupby("fecha")["monto"].sum().reset_index()
+
+    fig2 = go.Figure()
+
+    fig2.add_trace(
+        go.Bar(
+            x=df_diario["fecha"],
+            y=df_diario["monto"],
+            marker_color="#2980b9",
+            hovertemplate="<b>%{x|%d %b %Y}</b><br>Aporte del día: $%{y:,.0f}<extra></extra>",
+        )
+    )
+
+    fig2.update_layout(
+        title=dict(
+            text="Aportes por Día",
+            x=0.5,
+            xanchor="center",
+            font=dict(size=18)
+        ),
+        template="plotly_white",
+        font_family="Inter",
+        height=400,
+        autosize=True,
+        hovermode="x unified",
+        yaxis=dict(
+            title="CLP ($)",
+            tickformat=",.0f",
+            gridcolor="rgba(0,0,0,0.08)",
+            zeroline=False,
+            rangemode="tozero"
+        ),
+        xaxis=dict(
+            tickformat="%d %b %Y",
+            showgrid=False,
+            type="date"
+        ),
+        margin=dict(l=70, r=40, t=80, b=50)
+    )
+
+    fig2.show(config={'displayModeBar': False})
 
 # --- Tabla ---
 if total_recaudado > 0:
