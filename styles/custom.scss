@@ -1,31 +1,254 @@
 /*-- scss:defaults --*/
-$font-family-sans-serif: 'Inter', sans-serif;
-$headings-font-weight: 700;
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&family=Oswald:wght@300;400;500&display=swap');
+
+$font-family-sans-serif: 'Montserrat', sans-serif;
+$headings-font-family: 'Oswald', sans-serif;
+$headings-font-weight: 500;
+$body-bg: #f0eeeb;
+$body-color: #000000;
+$link-color: #939bc9;
 
 /*-- scss:rules --*/
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
-.navbar-brand {
-  font-weight: 700;
-  letter-spacing: -0.5px;
+// ---------------------------------------------------------------------------
+// Base
+// ---------------------------------------------------------------------------
+#quarto-content {
+  background-color: #f0eeeb;
+  color: black;
 }
 
+body.nav-fixed {
+  background-color: #f0eeeb;
+}
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  color: black;
+}
+
+a { text-decoration: none; }
+a:hover { color: black; }
+p > a, ul a, li > a, dd a { color: #939bc9; font-weight: 700; }
+b, strong a { color: #939bc9; }
+
+h1, .h1 {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 500;
+  color: black;
+  text-transform: uppercase;
+}
+
+h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6 {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 500;
+  color: black;
+  border-bottom: none;
+}
+
+blockquote {
+  margin: 0 0 1rem;
+  padding: 0.625rem 1.25rem;
+  border-left: 0.25rem solid black;
+}
+
+// ---------------------------------------------------------------------------
+// Navbar
+// ---------------------------------------------------------------------------
+.navbar {
+  padding-top: 0;
+  padding-bottom: 0;
+  font-family: 'Oswald', sans-serif;
+}
+
+#quarto-header {
+  border-bottom: 1px solid black;
+}
+
+.navbar-nav .nav-link {
+  color: black;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.navbar-nav .nav-link:hover {
+  color: #939bc9;
+}
+
+.navbar-nav .show > .nav-link,
+.navbar-nav .active > .nav-link,
+.navbar-nav .nav-link.active {
+  color: #939bc9;
+}
+
+@media (max-width: 991px) {
+  .navbar-nav-scroll { background: black; }
+  .navbar-nav .nav-link { color: white; }
+}
+
+// ---------------------------------------------------------------------------
+// Title block / headers
+// ---------------------------------------------------------------------------
+#title-block-header {
+  border-bottom: 1px solid black;
+  background-color: #f0eeeb;
+  margin-bottom: 1.8em;
+}
+
+.quarto-title-banner {
+  color: black;
+  padding-top: 2.5em;
+}
+
+.quarto-title-banner a { color: #939bc9; }
+.quarto-title-banner .quarto-title .title { font-weight: 500; color: black; }
+
+.quarto-title .quarto-categories .quarto-category {
+  font-family: 'Oswald', sans-serif;
+  font-size: .9em;
+  color: #939bc9;
+  text-transform: uppercase;
+  border: solid 1px;
+  border-radius: 0.25rem;
+}
+
+// ---------------------------------------------------------------------------
+// Buttons (article-btn / nav-btn / button)
+// ---------------------------------------------------------------------------
+.article-btn, .nav-btn, .button {
+  border: none;
+  border-radius: 0px;
+  background-color: black;
+  color: white;
+  padding: 0.85em 1em;
+  text-align: center;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.article-btn p, .nav-btn p, .button p {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.3em;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 0;
+}
+
+.article-btn a, .nav-btn a, .button a { color: white; font-weight: 500; }
+.article-btn a:hover, .nav-btn a:hover, .button a:hover { color: #939bc9; }
+
+// ---------------------------------------------------------------------------
+// Sidebar / TOC
+// ---------------------------------------------------------------------------
+.sidebar nav[role=doc-toc] > h2, .sidebar nav[role=doc-toc] > .h2 {
+  font-family: 'Oswald', sans-serif;
+  font-size: .875rem;
+  text-transform: uppercase;
+}
+
+.sidebar nav[role=doc-toc] ul > li > a.active {
+  border-left: 1px solid #939bc9;
+  color: #939bc9 !important;
+}
+
+.sidebar nav[role=doc-toc] > ul li a {
+  font-family: 'Montserrat', sans-serif;
+  color: black;
+}
+
+// ---------------------------------------------------------------------------
+// Listings (grid / posts)
+// ---------------------------------------------------------------------------
+div.quarto-post { border-bottom: 1px solid black; }
+
+div.quarto-post .metadata {
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+}
+
+div.quarto-post .listing-categories .listing-category,
+.quarto-grid-item .listing-categories .listing-category {
+  color: #939bc9;
+  border: solid 1px #939bc9 !important;
+  font-family: 'Oswald', sans-serif;
+  font-size: .75em;
+}
+
+.quarto-grid-item {
+  border: none;
+  background-color: #f0eeeb;
+}
+
+.quarto-grid-item .card-title { color: black; }
+.card-body { color: black; }
+
+// ---------------------------------------------------------------------------
+// Footer
+// ---------------------------------------------------------------------------
+.nav-footer {
+  color: white;
+  font-family: 'Oswald', sans-serif;
+}
+
+.nav-footer a { color: white; }
+.nav-footer a:hover { color: #939bc9; }
+
+body:not(.floating) .nav-footer {
+  border-top: 1px solid #f0eeeb;
+}
+
+// ---------------------------------------------------------------------------
+// Tablas
+// ---------------------------------------------------------------------------
+.table { color: black; }
+tr { border-color: black; }
+
+// ---------------------------------------------------------------------------
+// Marca de sitio (adaptado de "background styles" RWDS, con paleta chiledatos)
+// ---------------------------------------------------------------------------
+.black-background { background-color: black; }
+.purple-background { background-color: #939bc9; }
+.blue-background { background-color: #7eadba; }
+.yellow-background { background-color: #e3b638; }
+
+// ---------------------------------------------------------------------------
+// Hero (home) — reescrito para el look editorial claro
+// ---------------------------------------------------------------------------
 .hero {
   padding: 4rem 0 3rem;
   text-align: center;
-  h1 { font-size: 2.8rem; font-weight: 700; margin-bottom: 1rem; }
-  p.lead { font-size: 1.2rem; opacity: 0.75; max-width: 600px; margin: 0 auto 2rem; }
+  border-bottom: 1px solid black;
+  h1 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    color: black;
+  }
+  p.lead {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.2rem;
+    color: black;
+    opacity: 0.75;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+  }
 }
 
 .metric-card {
-  border-radius: 12px;
+  border-radius: 0px;
   padding: 1.5rem;
   margin-bottom: 1rem;
-  border: 1px solid rgba(0,0,0,.08);
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  background-color: white;
+  border: 1px solid black;
+  box-shadow: none;
 }
 
-/* ---- Página de noticias ---- */
+// ---------------------------------------------------------------------------
+// Página de noticias — reescrita en claro (antes asumía fondo oscuro)
+// ---------------------------------------------------------------------------
 .noticias-container {
   max-width: 780px;
   margin: 0 auto;
@@ -36,9 +259,9 @@ $headings-font-weight: 700;
 }
 
 .noticia-card {
-  background: var(--bs-body-bg);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
+  background: white;
+  border: 1px solid black;
+  border-radius: 0px;
   overflow: hidden;
   transition: transform 0.2s;
 }
@@ -62,33 +285,43 @@ $headings-font-weight: 700;
 }
 
 .noticia-fecha {
+  font-family: 'Oswald', sans-serif;
   font-size: 0.8rem;
-  color: #888;
+  text-transform: uppercase;
+  color: #555;
 }
 
 .noticia-tag {
+  font-family: 'Oswald', sans-serif;
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: 400;
   padding: 3px 12px;
-  border-radius: 20px;
+  border-radius: 0px;
   letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: solid 1px;
+  background: transparent;
 }
 
-.tag-politica  { background: #1e3a5f; color: #4fc3f7; }
-.tag-laboral   { background: #1a3d2b; color: #69d49a; }
-.tag-economia  { background: #3d2a00; color: #fbbf24; }
-.tag-finanzas  { background: #2d1a3d; color: #c084fc; }
+// Paleta de tags adaptada a fondo claro (mismo criterio que .quarto-category de RWDS: color = borde)
+.tag-politica  { color: #2c5f8a; border-color: #2c5f8a; }
+.tag-laboral   { color: #1f7a4d; border-color: #1f7a4d; }
+.tag-economia  { color: #a3720a; border-color: #a3720a; }
+.tag-finanzas  { color: #7d3fa3; border-color: #7d3fa3; }
 
 .noticia-card h2 {
+  font-family: 'Oswald', sans-serif;
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.4;
   margin: 0 0 1rem;
+  color: black;
 }
 
 .noticia-card p {
+  font-family: 'Montserrat', sans-serif;
   font-size: 0.97rem;
   line-height: 1.8;
-  color: #ccc;
+  color: #222;
   margin-bottom: 0.85rem;
 }
