@@ -2,6 +2,18 @@
 title: ""
 page-layout: full
 toc: false
+listing:
+  - id: latest-news
+    contents:
+      - /pages/noticias/posts
+      - "!index.qmd"
+    sort: "date desc"
+    type: grid
+    categories: false
+    sort-ui: false
+    filter-ui: false
+    max-items: 3
+    feed: false
 ---
 
 ```{=html}
@@ -70,95 +82,20 @@ Todas las fuentes son públicas y descargables.
 
 ## 📰 Últimas Noticias
 
-```{=html}
-<style>
-.noticias-preview {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
-  margin: 1.5rem 0;
-}
-.noticia-mini {
-  background: #16213e;
-  border: 1px solid #0f3460;
-  border-radius: 10px;
-  padding: 1rem 1.2rem;
-  color: #e0e0e0;
-  text-decoration: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  transition: transform 0.2s, border-color 0.2s;
-}
-.noticia-mini:hover {
-  transform: translateY(-3px);
-  border-color: #e94560;
-  color: #fff;
-  text-decoration: none;
-}
-.mini-fecha { font-size: 0.75rem; color: #888; }
-.mini-tag {
-  font-size: 0.7rem;
-  background: #0f3460;
-  color: #4fc3f7;
-  padding: 2px 8px;
-  border-radius: 20px;
-  width: fit-content;
-}
-.mini-titulo {
-  font-weight: 600;
-  font-size: 0.95rem;
-  margin: 0.2rem 0;
-}
-.mini-leer { font-size: 0.8rem; color: #e94560; margin-top: auto; }
-.noticia-mini-ver-todas {
-  border-style: dashed;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-</style>
+::: {#latest-news}
+:::
 
-<div class="noticias-preview">
+[Ver todas las noticias →](pages/noticias/index.qmd){.article-btn}
 
-  <a href="pages/noticias.html" class="noticia-mini">
-    <span class="mini-fecha">24 jun 2025</span>
-    <span class="mini-tag">Política</span>
-    <p class="mini-titulo">Cámara aprueba acusación contra exministro Grau</p>
-    <span class="mini-leer">Leer más →</span>
-  </a>
-
-  <a href="pages/noticias.html" class="noticia-mini">
-    <span class="mini-fecha">20 jun 2025</span>
-    <span class="mini-tag">Mercado Laboral</span>
-    <p class="mini-titulo">Otra noticia reciente</p>
-    <span class="mini-leer">Leer más →</span>
-  </a>
-
-  <a href="pages/noticias.html" class="noticia-mini noticia-mini-ver-todas">
-    <p class="mini-titulo">Ver todas las noticias</p>
-    <span class="mini-leer">Ir a noticias →</span>
-  </a>
-
-</div>
-```
-
-
----
-
-## ¿Qué es el PIB?
-
-El **Producto Interno Bruto (PIB)** mide el valor total de todos los bienes y servicios producidos dentro de un país en un período determinado. Es el indicador más usado para medir el tamaño y la salud de una economía.
-
-Cuando el PIB crece, significa que la economía produce más — lo que generalmente se traduce en más empleo e ingresos. Cuando cae, como ocurrió en Chile en 2020 (-6,14%) por la pandemia del COVID-19, indica una contracción económica.
-
-### ¿Por qué se usa el PIB encadenado?
-
-El PIB puede medirse a **precios corrientes** (nominales) o a **precios encadenados** (reales). La diferencia es importante:
-
-- **PIB nominal** incluye el efecto de la inflación — si los precios suben, el PIB sube aunque no se produzca más.
-- **PIB real encadenado** elimina el efecto de la inflación, permitiendo comparar el crecimiento verdadero entre años.
-
-La técnica de **encadenamiento** actualiza el año de referencia periódicamente (en Chile se usa una canasta que se actualiza cada año), lo que evita que los precios de un año base distorsionen las comparaciones a largo plazo. Por eso es el estándar internacional recomendado por el FMI y usado por el Banco Central de Chile.
-
-> En los gráficos de este sitio usamos siempre el PIB real encadenado, expresado como **tasa de variación anual (%)**.
+::: {.quote-block}
+<div class="quote-icon">"</div>
+<p class="quote-text">
+El litio es el nuevo cobre: en 2026 Chile concentra cerca de un cuarto
+de las reservas mundiales, pero su participación en el mercado global
+ha caído frente a la producción australiana.
+</p>
+<p class="quote-attribution">Análisis de Comercio Exterior — Economía y Políticas Públicas</p>
+<p class="quote-cta">
+<a href="pages/economia.qmd">Ver el análisis completo →</a>
+</p>
+:::

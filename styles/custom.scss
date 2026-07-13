@@ -384,3 +384,130 @@ tr { border-color: black; }
   color: #222;
   margin-bottom: 0.85rem;
 }
+
+
+
+// ---------------------------------------------------------------------------
+// 1) Bloque de cita destacada — como el "quote-purple" de RWDS entre secciones
+// ---------------------------------------------------------------------------
+.quote-block {
+  background-color: black;
+  color: white;
+  padding: 3.5rem 2rem;
+  text-align: center;
+  margin: 3rem 0;
+
+  .quote-icon {
+    font-family: 'Oswald', sans-serif;
+    font-size: 4rem;
+    line-height: 1;
+    color: #939bc9;
+    margin-bottom: 1rem;
+  }
+
+  .quote-text {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 300;
+    font-size: 1.6rem;
+    line-height: 1.4;
+    max-width: 780px;
+    margin: 0 auto 1.5rem;
+    color: white;
+  }
+
+  .quote-attribution {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.95rem;
+    color: #ccc;
+    margin-bottom: 1.2rem;
+  }
+
+  .quote-cta a {
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #939bc9;
+    font-weight: 500;
+    border-bottom: 1px solid #939bc9;
+    padding-bottom: 2px;
+  }
+
+  .quote-cta a:hover { color: white; border-color: white; }
+}
+
+// ---------------------------------------------------------------------------
+// 2) Footer institucional — "Publicado por / Socios / Con el apoyo de" + enlaces
+// ---------------------------------------------------------------------------
+.site-footer {
+  background-color: black;
+  color: #eee;
+  padding: 3rem 1.5rem 2rem;
+  margin-top: 3rem;
+  font-family: 'Montserrat', sans-serif;
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+  }
+
+  h4 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #939bc9;
+    margin-bottom: 0.9rem;
+    border-bottom: none;
+  }
+
+  .footer-logo img {
+    max-height: 42px;
+    filter: grayscale(1) brightness(2); // logos en blanco sobre negro
+    margin-bottom: 0.5rem;
+  }
+
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { margin-bottom: 0.5rem; }
+
+  a { color: #eee; }
+  a:hover { color: #939bc9; }
+
+  .footer-bottom {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-top: 1.5rem;
+    border-top: 1px solid #333;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: #999;
+  }
+
+  .footer-social a { margin-right: 0.9rem; font-size: 1.1rem; }
+}
+
+// ---------------------------------------------------------------------------
+// 3) Submenú desplegable de navbar (tipo "About RWDS") — refuerza el dropdown
+//    por defecto de Quarto con tu tipografía
+// ---------------------------------------------------------------------------
+.navbar-nav .dropdown-menu {
+  background-color: #f0eeeb;
+  border: 1px solid black;
+  border-radius: 0;
+}
+
+.navbar-nav .dropdown-item {
+  font-family: 'Montserrat', sans-serif;
+  color: black;
+  text-transform: none;
+}
+
+.navbar-nav .dropdown-item:hover {
+  background-color: black;
+  color: white;
+}
