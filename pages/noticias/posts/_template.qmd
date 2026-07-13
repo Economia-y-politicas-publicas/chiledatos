@@ -1,0 +1,18 @@
+---
+# PLANTILLA — no se publica (Quarto ignora archivos que empiezan con "_")
+# Para agregar una noticia nueva:
+#   1. Copia este archivo dentro de pages/noticias/posts/
+#   2. Renómbralo como AAAA-MM-DD-titulo-corto.qmd
+#   3. Completa los campos de abajo y escribe el cuerpo debajo del "---"
+# La tarjeta en la grilla de /pages/noticias/ se arma sola con estos campos.
+title: "Título de la noticia"
+description: "Resumen de 1-2 líneas que aparece en la tarjeta de listado."
+author: "Redacción"
+date: 2025-01-01
+categories: [Política]   # Opciones usadas en el sitio: Política, Mercado Laboral, Economía, Finanzas Públicas
+image: "../../../imagenes/noticias/nombre-imagen.png"  # opcional, quitar la línea si no hay imagen
+image-alt: "Descripción de la imagen para lectores de pantalla"
+title-block-banner: true
+---
+
+Cuerpo de la noticia en párrafos normales de Markdown.

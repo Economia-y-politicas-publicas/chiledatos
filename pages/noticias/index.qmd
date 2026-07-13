@@ -1,0 +1,20 @@
+---
+pagetitle: "Noticias | Economía y Políticas Públicas"
+title: "Noticias"
+subtitle: "Seguimiento de la actualidad económica, fiscal y laboral en Chile."
+description: |
+  En esta sección: [Fuentes de datos](/pages/datos.qmd)
+search: false
+repo-actions: false
+listing:
+  contents: posts
+  sort: "date desc"
+  type: grid
+  categories: true
+  sort-ui: false
+  filter-ui: false
+  page-size: 12
+  feed: true
+  fields: [image, date, title, description, categories, author]
+  image-height: "188px"
+---

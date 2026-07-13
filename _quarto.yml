@@ -10,13 +10,13 @@ website:
   open-graph: true
   twitter-card: true
   navbar:
-    background: dark
-    foreground: light
+    background: light
+    foreground: dark
     left:
       - href: index.qmd
         text: Inicio
-      - text: "📰 Noticias"
-        href: pages/noticias.qmd
+      - text: "Noticias"
+        href: pages/noticias/index.qmd
       - href: pages/economia.qmd
         text: Economía
       - href: pages/finanzas_publicas.qmd
@@ -43,6 +43,7 @@ format:
     theme:
       - lux
       - styles/custom.scss
+    title-block-banner: true
     toc: true
     toc-depth: 3
     toc-title: "En esta página"
