@@ -22,8 +22,8 @@ listing:
 <script>
 tsParticles.load("particles-js", {
   particles: {
-    number: { value: 80 },
-    color: { value: "#ffffff" },
+    number: { value: 60 },
+    color: { value: "#162993" },
     opacity: { value: 0.6 },
     size: { value: 3 },
     move: { enable: true, speed: 0.9 },
@@ -34,7 +34,7 @@ tsParticles.load("particles-js", {
       distance: 130,
     },
   },
-  background: { color: "#1a1a2e" },
+  background: { color: "#b2b2b2" },
 });
 </script>
 
@@ -90,11 +90,9 @@ Todas las fuentes son públicas y descargables.
 ::: {.quote-block}
 <div class="quote-icon">"</div>
 <p class="quote-text">
-El litio es el nuevo cobre: en 2026 Chile concentra cerca de un cuarto
-de las reservas mundiales, pero su participación en el mercado global
-ha caído frente a la producción australiana.
+Esto es un esfuerzo por acercar la economía a las personas.
 </p>
-<p class="quote-attribution">Análisis de Comercio Exterior — Economía y Políticas Públicas</p>
+<p class="quote-attribution">Economía y Políticas Públicas</p>
 <p class="quote-cta">
 <a href="pages/economia.qmd">Ver el análisis completo →</a>
 </p>

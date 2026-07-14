@@ -2,7 +2,48 @@
 title: "Riesgo País"
 subtitle: "EMBI Global Diversified — Serie Histórica"
 date: last-modified
+toc: true
+categories:
+  - Riesgo País
+  - Mercados
 ---
+
+## ¿Qué es el riesgo país?
+
+El **riesgo país** mide qué tan probable es que un Estado no pueda
+cumplir con el pago de su deuda. Cuanto más alto es este riesgo,
+más caro le resulta a un país endeudarse en los mercados
+internacionales — y ese costo suele traspasarse también a empresas
+y bancos locales que buscan financiamiento afuera.
+
+El indicador más usado para medirlo es el **EMBI (Emerging Markets
+Bond Index)**, calculado por J.P. Morgan. El EMBI compara el
+rendimiento de los bonos soberanos de un país emergente con el de
+los bonos del Tesoro de Estados Unidos, considerados "libres de
+riesgo". La diferencia entre ambos —el **spread**— se expresa en
+puntos base o porcentaje: mientras más alto, mayor es la prima que
+el mercado exige por prestarle a ese país.
+
+::: {.callout-note}
+## Cómo leer el EMBI
+Un EMBI de **2%** significa que, en teoría, ese país debe pagar 2
+puntos porcentuales más de interés que el Tesoro de EE.UU. para
+colocar deuda a un plazo comparable. Subidas bruscas del EMBI suelen
+anticipar o acompañar episodios de estrés político o fiscal.
+:::
+
+## El EMBI de Chile en contexto
+
+Comparado con el resto de la región, Chile ha mantenido
+históricamente uno de los spreads más bajos de América Latina,
+reflejo de sus cuentas fiscales relativamente ordenadas y su grado
+de inversión. Sin embargo, el indicador no es estático: sube con
+shocks de confianza (cambios de gobierno, ciclos de commodities,
+tensión social) y baja en períodos de estabilidad macroeconómica.
+
+Los datos de este análisis provienen directamente de la planilla
+histórica que publica el **Banco Central de República Dominicana**, y se actualizan
+cada vez que se vuelve a renderizar esta página.
 
 ```{python}
 #| label: setup-embi
@@ -84,7 +125,7 @@ if not df_embi.empty:
             f"| {fmt(row['Argentina'])} |\n"
         )
 
-    display(Markdown("### Últimos Datos por País"))
+    display(Markdown("### Últimos datos por país"))
     display(Markdown(tabla_md))
 ```
 
@@ -97,6 +138,14 @@ if ultimo_valor is not None:
 > **Último dato ({ultima_fecha}):** EMBI Chile = **{ultimo_valor:.2f}%**
 """))
 ```
+
+## Evolución histórica del EMBI en Chile
+
+El siguiente gráfico muestra la serie completa del spread chileno.
+Los saltos más pronunciados suelen coincidir con crisis externas
+(2008, 2020) o con períodos de mayor incertidumbre política interna;
+las caídas sostenidas, en cambio, reflejan ciclos de confianza y
+condiciones financieras globales más laxas.
 
 ```{python}
 #| echo: false
@@ -146,6 +195,15 @@ else:
     display(Markdown("_No hay datos disponibles._"))
 ```
 
+## Chile frente al resto de la región
+
+Ver el EMBI de Chile de forma aislada dice poco: lo relevante es
+compararlo con sus pares regionales. Este gráfico incluye todos los
+países disponibles en la planilla del Banco Central; por defecto se
+ocultan aquellos con spreads muy altos o volátiles (como Venezuela),
+que de otro modo distorsionarían la escala del resto — puedes
+activarlos haciendo clic en la leyenda.
+
 ```{python}
 #| echo: false
 
@@ -179,7 +237,7 @@ if not df_embi.empty:
     }
 
     # Países que se ocultan por defecto por distorsionar la escala
-    ocultos = {"Venezuela", "RD-LATINO", "Honduras", "Guatemala", "Bolivia", "Costa Rica", "El Salvador", "Paraguay", "Perú", "Panamá","Uruguay" }
+    ocultos = {"Venezuela", "RD-LATINO", "Honduras", "Guatemala", "Bolivia", "Costa Rica", "El Salvador", "Paraguay", "Perú", "Panamá","Uruguay","Ecuador","Global","REP DOM" }
 
     fig2 = go.Figure()
 
@@ -239,6 +297,13 @@ if not df_embi.empty:
 
     fig2.show(config={"displayModeBar": True})
 ```
+
+## Fotografía actual: último dato por país
+
+Esta vista de barras horizontales resume el estado presente del
+riesgo país en la región, ordenado de menor a mayor. Es la forma más
+rápida de ver quién paga más caro su deuda hoy, sin el ruido de la
+serie histórica completa.
 
 ```{python}
 #| echo: false
@@ -302,3 +367,19 @@ if not df_embi.empty:
 
     fig3.show(config={"displayModeBar": True})
 ```
+
+::: {.further-info}
+::: grid
+::: {.g-col-12 .g-col-md-6}
+Fuente de los datos
+: [Banco Central de República Dominicana — Serie Histórica Spread del EMBI](https://www.bancentral.gov.do/a/d/2585-entorno-internacional)
+:::
+
+::: {.g-col-12 .g-col-md-6}
+Metodología
+: El EMBI Global Diversified es calculado y publicado por J.P.
+Morgan; esta página reutiliza la serie histórica que el Banco
+Central de Chile republica en su sitio de estadísticas.
+:::
+:::
+:::

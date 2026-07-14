@@ -13,7 +13,7 @@
         "    page-layout: full\n",
         "---"
       ],
-      "id": "bbab2cd4"
+      "id": "92f36349"
     },
     {
       "cell_type": "code",
@@ -23,34 +23,31 @@
         "#| include: false\n",
         "\n",
         "import os\n",
+        "import base64\n",
         "import requests\n",
         "import pandas as pd\n",
         "import plotly.graph_objects as go\n",
         "from datetime import datetime, timedelta\n",
+        "from IPython.display import HTML\n",
         "\n",
-        "usuario = os.environ.get(\"BCENTRAL_USER\")\n",
+        "usuario  = os.environ.get(\"BCENTRAL_USER\")\n",
         "password = os.environ.get(\"BCENTRAL_PASS\")\n",
-        "\n",
-        "URL_API = \"https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx\"\n",
+        "URL_API  = \"https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx\"\n",
         "\n",
         "def obtener_serie(codigo, dias=365):\n",
-        "    hoy = datetime.today()\n",
+        "    hoy    = datetime.today()\n",
         "    inicio = (hoy - timedelta(days=dias)).strftime(\"%Y-%m-%d\")\n",
-        "    fin = hoy.strftime(\"%Y-%m-%d\")\n",
+        "    fin    = hoy.strftime(\"%Y-%m-%d\")\n",
         "    params = {\n",
-        "        \"user\": usuario,\n",
-        "        \"pass\": password,\n",
-        "        \"function\": \"GetSeries\",\n",
-        "        \"timeseries\": codigo,\n",
-        "        \"firstdate\": inicio,\n",
-        "        \"lastdate\": fin,\n",
-        "        \"format\": \"json\",\n",
+        "        \"user\": usuario, \"pass\": password,\n",
+        "        \"function\": \"GetSeries\", \"timeseries\": codigo,\n",
+        "        \"firstdate\": inicio, \"lastdate\": fin, \"format\": \"json\",\n",
         "    }\n",
         "    try:\n",
-        "        r = requests.get(URL_API, params=params, timeout=10)\n",
+        "        r    = requests.get(URL_API, params=params, timeout=10)\n",
         "        data = r.json()\n",
-        "        obs = data[\"Series\"][\"Obs\"]\n",
-        "        df = pd.DataFrame(obs)\n",
+        "        obs  = data[\"Series\"][\"Obs\"]\n",
+        "        df   = pd.DataFrame(obs)\n",
         "        col_fecha = \"indexDateString\" if \"indexDateString\" in df.columns else df.columns[0]\n",
         "        col_valor = \"value\" if \"value\" in df.columns else df.columns[1]\n",
         "        df[\"fecha\"] = pd.to_datetime(df[col_fecha], format=\"%d-%m-%Y\", errors=\"coerce\")\n",
@@ -64,7 +61,7 @@
         "    if df.empty:\n",
         "        return go.Figure()\n",
         "    ultimo = df[\"valor\"].iloc[-1]\n",
-        "    fecha = df[\"fecha\"].iloc[-1].strftime(\"%d/%m/%Y\")\n",
+        "    fecha  = df[\"fecha\"].iloc[-1].strftime(\"%d/%m/%Y\")\n",
         "    minimo = df[\"valor\"].min()\n",
         "    maximo = df[\"valor\"].max()\n",
         "    margen = (maximo - minimo) * 0.05\n",
@@ -90,33 +87,74 @@
         "            x=0, y=-0.3, xref=\"paper\", yref=\"paper\",\n",
         "            showarrow=False, font=dict(size=9, color=\"gray\"), xanchor=\"left\",\n",
         "        )],\n",
+        "        updatemenus=[dict(\n",
+        "            type=\"buttons\", direction=\"right\",\n",
+        "            x=1, y=1.15, xanchor=\"right\", yanchor=\"top\",\n",
+        "            buttons=[\n",
+        "                dict(label=\"Eje ajustado\", method=\"relayout\",\n",
+        "                     args=[{\"yaxis.range\": [minimo - margen, maximo + margen], \"yaxis.autorange\": False}]),\n",
+        "                dict(label=\"Eje desde 0\", method=\"relayout\",\n",
+        "                     args=[{\"yaxis.range\": [0, maximo + margen], \"yaxis.autorange\": False}]),\n",
+        "            ],\n",
+        "            showactive=True, bgcolor=\"rgba(255,255,255,0.9)\",\n",
+        "            bordercolor=\"#ccc\", borderwidth=1, font=dict(size=11),\n",
+        "        )],\n",
         "    )\n",
         "    return fig\n",
         "\n",
         "def variacion(df):\n",
         "    if len(df) < 2:\n",
         "        return 0, \"gray\"\n",
-        "    v = ((df[\"valor\"].iloc[-1] - df[\"valor\"].iloc[-2]) / df[\"valor\"].iloc[-2]) * 100\n",
+        "    v     = ((df[\"valor\"].iloc[-1] - df[\"valor\"].iloc[-2]) / df[\"valor\"].iloc[-2]) * 100\n",
         "    color = \"#2ecc71\" if v >= 0 else \"#e74c3c\"\n",
         "    return v, color\n",
         "\n",
-        "ultima_actualizacion = datetime.today().strftime(\"%d/%m/%Y %H:%M\")\n",
+        "def tabla_y_descarga(df, nombre_archivo, col_fecha=\"fecha\", col_valor=\"valor\",\n",
+        "                     label_fecha=\"Fecha\", label_valor=\"Valor\"):\n",
+        "    if df.empty:\n",
+        "        return HTML(\"<p style='color:gray;font-size:.85rem'>Sin datos disponibles.</p>\")\n",
         "\n",
-        "tco   = obtener_serie(\"F073.TCO.PRE.Z.D\")\n",
-        "uf    = obtener_serie(\"F073.UFF.PRE.Z.D\")\n",
-        "ivp   = obtener_serie(\"F073.IVP.PRE.Z.D\")\n",
-        "euro  = obtener_serie(\"F072.CLP.EUR.N.O.D\")\n",
-        "oro   = obtener_serie(\"F019.PPB.PRE.44B.M\")\n",
-        "plata = obtener_serie(\"F019.PPB.PRE.45B.M\")\n",
-        "cobre = obtener_serie(\"F019.PPB.PRE.40.M\")\n",
-        "ipc   = obtener_serie(\"F074.IPC.IND.Z.EP09.C.M\", dias=1095)\n",
-        "tpm   = obtener_serie(\"F022.TPM.TIN.D001.NO.Z.M\", dias=1095)\n",
-        "utm   = obtener_serie(\"F073.UTR.PRE.Z.M\", dias=1095)\n",
+        "    # Preparar tabla\n",
+        "    df_tabla = df[[col_fecha, col_valor]].copy()\n",
+        "    df_tabla[col_fecha] = df_tabla[col_fecha].dt.strftime(\"%d/%m/%Y\")\n",
+        "    df_tabla.columns    = [label_fecha, label_valor]\n",
+        "    df_tabla            = df_tabla.sort_values(label_fecha, ascending=False)\n",
+        "\n",
+        "    tabla_html = df_tabla.to_html(\n",
+        "        index=False,\n",
+        "        classes=\"table table-sm table-striped table-hover\",\n",
+        "        border=0,\n",
+        "    )\n",
+        "\n",
+        "    # Botón descarga CSV\n",
+        "    csv = df_tabla.to_csv(index=False)\n",
+        "    b64 = base64.b64encode(csv.encode()).decode()\n",
+        "    boton = f'''\n",
+        "    <a href=\"data:text/csv;base64,{b64}\"\n",
+        "       download=\"{nombre_archivo}.csv\"\n",
+        "       class=\"btn btn-sm btn-outline-secondary\"\n",
+        "       style=\"margin-bottom:.75rem;\">\n",
+        "       ⬇ Descargar CSV\n",
+        "    </a>'''\n",
+        "\n",
+        "    return HTML(f\"\"\"\n",
+        "    <details style=\"margin-top:.5rem; margin-bottom:1.5rem;\">\n",
+        "      <summary style=\"cursor:pointer; color:#3498db; font-size:.9rem; margin-bottom:.5rem;\">\n",
+        "        📋 Ver tabla de datos\n",
+        "      </summary>\n",
+        "      <div style=\"margin-top:.5rem;\">\n",
+        "        {boton}\n",
+        "        <div style=\"max-height:280px; overflow-y:auto; font-size:.85rem;\">\n",
+        "          {tabla_html}\n",
+        "        </div>\n",
+        "      </div>\n",
+        "    </details>\n",
+        "    \"\"\")\n",
         "\n",
         "def tarjeta(nombre, df, prefijo=\"\", sufijo=\"\", formato=\",.0f\"):\n",
         "    if df.empty:\n",
         "        return f'<div class=\"ind-card\"><div class=\"ind-name\">{nombre}</div><div class=\"ind-value\">N/D</div></div>'\n",
-        "    val = df[\"valor\"].iloc[-1]\n",
+        "    val   = df[\"valor\"].iloc[-1]\n",
         "    fecha = df[\"fecha\"].iloc[-1].strftime(\"%d/%m/%Y\")\n",
         "    var, color = variacion(df)\n",
         "    flecha = \"▲\" if var >= 0 else \"▼\"\n",
@@ -126,7 +164,22 @@
         "  <div class=\"ind-value\">{prefijo}{val:{formato}}{sufijo}</div>\n",
         "  <div class=\"ind-var\" style=\"color:{color}\">{flecha} {abs(var):.2f}%</div>\n",
         "  <div class=\"ind-fecha\">{fecha}</div>\n",
-        "</div>\"\"\""
+        "</div>\"\"\"\n",
+        "\n",
+        "ultima_actualizacion = datetime.today().strftime(\"%d/%m/%Y %H:%M\")\n",
+        "\n",
+        "tco      = obtener_serie(\"F073.TCO.PRE.Z.D\")\n",
+        "uf       = obtener_serie(\"F073.UFF.PRE.Z.D\")\n",
+        "ivp      = obtener_serie(\"F073.IVP.PRE.Z.D\")\n",
+        "euro     = obtener_serie(\"F072.CLP.EUR.N.O.D\")\n",
+        "oro      = obtener_serie(\"F019.PPB.PRE.44.D\")\n",
+        "plata    = obtener_serie(\"F019.PPB.PRE.45.D\")\n",
+        "cobre    = obtener_serie(\"F019.PPB.PRE.100.D\")\n",
+        "litio    = obtener_serie(\"F019.PPB.PRE.37.D\")\n",
+        "petroleo = obtener_serie(\"F019.PPB.PRE.41.D\")\n",
+        "ipc      = obtener_serie(\"F074.IPC.IND.Z.EP09.C.M\", dias=1095)\n",
+        "tpm      = obtener_serie(\"F022.TPM.TIN.D001.NO.Z.M\", dias=1095)\n",
+        "utm      = obtener_serie(\"F073.UTR.PRE.Z.M\", dias=1095)"
       ],
       "id": "setup",
       "execution_count": null,
@@ -156,28 +209,10 @@
         "  transform: translateY(-3px);\n",
         "  box-shadow: 0 6px 20px rgba(0,0,0,0.3);\n",
         "}\n",
-        ".ind-name {\n",
-        "  font-size: .8rem;\n",
-        "  text-transform: uppercase;\n",
-        "  letter-spacing: .5px;\n",
-        "  opacity: .6;\n",
-        "  margin-bottom: .4rem;\n",
-        "}\n",
-        ".ind-value {\n",
-        "  font-size: 1.6rem;\n",
-        "  font-weight: 700;\n",
-        "  letter-spacing: -1px;\n",
-        "  margin-bottom: .3rem;\n",
-        "}\n",
-        ".ind-var {\n",
-        "  font-size: .9rem;\n",
-        "  font-weight: 600;\n",
-        "}\n",
-        ".ind-fecha {\n",
-        "  font-size: .75rem;\n",
-        "  opacity: .45;\n",
-        "  margin-top: .3rem;\n",
-        "}\n",
+        ".ind-name  { font-size:.8rem; text-transform:uppercase; letter-spacing:.5px; opacity:.6; margin-bottom:.4rem; }\n",
+        ".ind-value { font-size:1.6rem; font-weight:700; letter-spacing:-1px; margin-bottom:.3rem; }\n",
+        ".ind-var   { font-size:.9rem; font-weight:600; }\n",
+        ".ind-fecha { font-size:.75rem; opacity:.45; margin-top:.3rem; }\n",
         "</style>\n",
         "```\n",
         "\n",
@@ -187,29 +222,28 @@
         "\n",
         "## Resumen"
       ],
-      "id": "2195f9ee"
+      "id": "eea98a03"
     },
     {
       "cell_type": "code",
       "metadata": {},
       "source": [
         "#| echo: false\n",
-        "from IPython.display import HTML\n",
-        "\n",
         "html = '<div class=\"ind-grid\">'\n",
-        "html += tarjeta(\"Dólar USD\", tco, prefijo=\"$\", formato=\",.0f\")\n",
-        "html += tarjeta(\"Euro\", euro, prefijo=\"$\", formato=\",.0f\")\n",
-        "html += tarjeta(\"UF\", uf, prefijo=\"$\", formato=\",.2f\")\n",
-        "html += tarjeta(\"IVP\", ivp, prefijo=\"$\", formato=\",.2f\")\n",
-        "html += tarjeta(\"UTM\", utm, prefijo=\"$\", formato=\",.0f\")\n",
-        "html += tarjeta(\"TPM\", tpm, sufijo=\"%\", formato=\".2f\")\n",
-        "html += tarjeta(\"Cobre\", cobre, sufijo=\" ¢/lb\", formato=\".2f\")\n",
-        "html += tarjeta(\"Oro\", oro, prefijo=\"$\", sufijo=\" oz\", formato=\",.2f\")\n",
-        "html += tarjeta(\"Plata\", plata, prefijo=\"$\", sufijo=\" oz\", formato=\",.2f\")\n",
+        "html += tarjeta(\"Dólar USD\", tco,      prefijo=\"$\",  formato=\",.0f\")\n",
+        "html += tarjeta(\"Euro\",      euro,     prefijo=\"$\",  formato=\",.0f\")\n",
+        "html += tarjeta(\"UF\",        uf,       prefijo=\"$\",  formato=\",.2f\")\n",
+        "html += tarjeta(\"UTM\",       utm,      prefijo=\"$\",  formato=\",.0f\")\n",
+        "html += tarjeta(\"TPM\",       tpm,      sufijo=\"%\",   formato=\".1f\")\n",
+        "html += tarjeta(\"Cobre\",     cobre,    sufijo=\" ¢/lb\", formato=\".2f\")\n",
+        "html += tarjeta(\"Oro\",       oro,      prefijo=\"$\",  sufijo=\" oz\",    formato=\",.2f\")\n",
+        "html += tarjeta(\"Plata\",     plata,    prefijo=\"$\",  sufijo=\" oz\",    formato=\",.2f\")\n",
+        "html += tarjeta(\"Litio\",     litio,    prefijo=\"$\",  sufijo=\" kg\",    formato=\",.2f\")\n",
+        "html += tarjeta(\"Petróleo\",  petroleo, prefijo=\"$\",  sufijo=\" barril\", formato=\",.2f\")\n",
         "html += '</div>'\n",
         "HTML(html)"
       ],
-      "id": "13a3add6",
+      "id": "7f4e5a70",
       "execution_count": null,
       "outputs": []
     },
@@ -221,18 +255,19 @@
         "\n",
         "## 💵 Tipos de Cambio\n",
         "\n",
-        "Los tipos de cambio reflejan el valor relativo entre monedas. El **dólar observado** es el promedio ponderado de las operaciones del mercado cambiario formal publicado diariamente por el Banco Central."
+        "El **dólar observado** es el promedio ponderado de las operaciones del mercado cambiario formal publicado diariamente por el Banco Central."
       ],
-      "id": "811a0ac3"
+      "id": "e7312c85"
     },
     {
       "cell_type": "code",
       "metadata": {},
       "source": [
         "grafico_linea(tco, \"Dólar observado USD/CLP\", \"CLP por USD\",\n",
-        "              color=\"rgb(41,128,185)\", formato_y=\",.0f\", prefijo=\"$\").show()"
+        "              color=\"rgb(41,128,185)\", formato_y=\",.0f\", prefijo=\"$\").show()\n",
+        "tabla_y_descarga(tco, \"dolar_usd_clp\", label_valor=\"CLP por USD\")"
       ],
-      "id": "575de620",
+      "id": "ccdae598",
       "execution_count": null,
       "outputs": []
     },
@@ -241,9 +276,10 @@
       "metadata": {},
       "source": [
         "grafico_linea(euro, \"Euro EUR/CLP\", \"CLP por EUR\",\n",
-        "              color=\"rgb(52,152,219)\", formato_y=\",.0f\", prefijo=\"$\").show()"
+        "              color=\"rgb(52,152,219)\", formato_y=\",.0f\", prefijo=\"$\").show()\n",
+        "tabla_y_descarga(euro, \"euro_clp\", label_valor=\"CLP por EUR\")"
       ],
-      "id": "8b8836a3",
+      "id": "02f393e1",
       "execution_count": null,
       "outputs": []
     },
@@ -255,18 +291,19 @@
         "\n",
         "## 📊 Unidades de Reajuste\n",
         "\n",
-        "La **UF (Unidad de Fomento)** y el **IVP (Índice de Valor Promedio)** son unidades de cuenta reajustables según la inflación, usadas en contratos hipotecarios, arriendos y otros instrumentos financieros."
+        "La **UF** se reajusta mensualmente según el IPC. El **IVP** se reajusta según la variación semestral móvil del IPC."
       ],
-      "id": "7e30272e"
+      "id": "f0e38389"
     },
     {
       "cell_type": "code",
       "metadata": {},
       "source": [
         "grafico_linea(uf, \"Unidad de Fomento (UF)\", \"Pesos chilenos\",\n",
-        "              color=\"rgb(39,174,96)\", formato_y=\",.2f\", prefijo=\"$\").show()"
+        "              color=\"rgb(39,174,96)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
+        "tabla_y_descarga(uf, \"uf_diaria\", label_valor=\"UF ($)\")"
       ],
-      "id": "5fcf851b",
+      "id": "f255aac1",
       "execution_count": null,
       "outputs": []
     },
@@ -275,9 +312,10 @@
       "metadata": {},
       "source": [
         "grafico_linea(ivp, \"Índice de Valor Promedio (IVP)\", \"Pesos chilenos\",\n",
-        "              color=\"rgb(46,204,113)\", formato_y=\",.2f\", prefijo=\"$\").show()"
+        "              color=\"rgb(46,204,113)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
+        "tabla_y_descarga(ivp, \"ivp_diario\", label_valor=\"IVP ($)\")"
       ],
-      "id": "57a6b4f6",
+      "id": "77a67297",
       "execution_count": null,
       "outputs": []
     },
@@ -289,18 +327,19 @@
         "\n",
         "## 🪙 Materias Primas\n",
         "\n",
-        "Chile es el mayor productor mundial de **cobre**, por lo que su precio tiene un impacto directo en los ingresos fiscales y el tipo de cambio. El oro y la plata son referencias internacionales de valor."
+        "Chile es el mayor productor mundial de **cobre**, por lo que su precio tiene un impacto directo en los ingresos fiscales y el tipo de cambio."
       ],
-      "id": "3180c4cb"
+      "id": "3fa9074e"
     },
     {
       "cell_type": "code",
       "metadata": {},
       "source": [
         "grafico_linea(cobre, \"Cobre (centavos de dólar por libra)\", \"USD centavos/libra\",\n",
-        "              color=\"rgb(211,84,0)\", formato_y=\".2f\").show()"
+        "              color=\"rgb(211,84,0)\", formato_y=\".2f\").show()\n",
+        "tabla_y_descarga(cobre, \"cobre_usd_libra\", label_valor=\"USD centavos/libra\")"
       ],
-      "id": "0dce2f97",
+      "id": "72967c75",
       "execution_count": null,
       "outputs": []
     },
@@ -309,9 +348,10 @@
       "metadata": {},
       "source": [
         "grafico_linea(oro, \"Oro (dólares por onza troy)\", \"USD/onza troy\",\n",
-        "              color=\"rgb(243,156,18)\", formato_y=\",.2f\", prefijo=\"$\").show()"
+        "              color=\"rgb(243,156,18)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
+        "tabla_y_descarga(oro, \"oro_usd_oz\", label_valor=\"USD/onza troy\")"
       ],
-      "id": "a84656e9",
+      "id": "ffb3d81f",
       "execution_count": null,
       "outputs": []
     },
@@ -320,9 +360,34 @@
       "metadata": {},
       "source": [
         "grafico_linea(plata, \"Plata (dólares por onza troy)\", \"USD/onza troy\",\n",
-        "              color=\"rgb(149,165,166)\", formato_y=\",.2f\", prefijo=\"$\").show()"
+        "              color=\"rgb(149,165,166)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
+        "tabla_y_descarga(plata, \"plata_usd_oz\", label_valor=\"USD/onza troy\")"
       ],
-      "id": "1be38844",
+      "id": "0ef2f19f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(litio, \"Litio (dólares por kilo)\", \"USD/kg\",\n",
+        "              color=\"rgb(27,183,194)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
+        "tabla_y_descarga(litio, \"litio_usd_kg\", label_valor=\"USD/kg\")"
+      ],
+      "id": "dc3e1825",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grafico_linea(petroleo, \"Petróleo WTI (dólares por barril)\", \"USD/barril\",\n",
+        "              color=\"rgb(14,190,67)\", formato_y=\",.2f\", prefijo=\"$\").show()\n",
+        "tabla_y_descarga(petroleo, \"petroleo_usd_barril\", label_valor=\"USD/barril\")"
+      ],
+      "id": "47bde662",
       "execution_count": null,
       "outputs": []
     },
@@ -334,18 +399,19 @@
         "\n",
         "## 🏦 Tasas e Indicadores Monetarios\n",
         "\n",
-        "La **Tasa de Política Monetaria (TPM)** es el principal instrumento del Banco Central para controlar la inflación. La **UTM** es una unidad tributaria usada para expresar multas y valores en el sistema tributario chileno."
+        "La **TPM** es el principal instrumento del Banco Central para controlar la inflación. La **UTM** es una unidad tributaria usada en el sistema tributario chileno."
       ],
-      "id": "0e1646ca"
+      "id": "96c3aacc"
     },
     {
       "cell_type": "code",
       "metadata": {},
       "source": [
         "grafico_linea(tpm, \"Tasa de Política Monetaria (TPM)\", \"Porcentaje (%)\",\n",
-        "              color=\"rgb(142,68,173)\", formato_y=\".2f\", sufijo=\"%\").show()"
+        "              color=\"rgb(142,68,173)\", formato_y=\".2f\", sufijo=\"%\").show()\n",
+        "tabla_y_descarga(tpm, \"tpm\", label_valor=\"TPM (%)\")"
       ],
-      "id": "ec99e257",
+      "id": "0ed9b2bd",
       "execution_count": null,
       "outputs": []
     },
@@ -354,9 +420,10 @@
       "metadata": {},
       "source": [
         "grafico_linea(utm, \"Unidad Tributaria Mensual (UTM)\", \"Pesos chilenos\",\n",
-        "              color=\"rgb(52,73,94)\", formato_y=\",.0f\", prefijo=\"$\").show()"
+        "              color=\"rgb(52,73,94)\", formato_y=\",.0f\", prefijo=\"$\").show()\n",
+        "tabla_y_descarga(utm, \"utm\", label_valor=\"UTM ($)\")"
       ],
-      "id": "4af898f0",
+      "id": "86da2a33",
       "execution_count": null,
       "outputs": []
     },
@@ -368,18 +435,19 @@
         "\n",
         "## 📈 Inflación\n",
         "\n",
-        "El **IPC (Índice de Precios al Consumidor)** mide la variación mensual de los precios de una canasta representativa de bienes y servicios. Es el principal indicador de inflación en Chile."
+        "El **IPC** mide la variación mensual de los precios de una canasta representativa de bienes y servicios."
       ],
-      "id": "e736586c"
+      "id": "efe5c524"
     },
     {
       "cell_type": "code",
       "metadata": {},
       "source": [
         "grafico_linea(ipc, \"Variación anual IPC (%)\", \"Variación (%)\",\n",
-        "              color=\"rgb(231,76,60)\", formato_y=\".2f\", sufijo=\"%\").show()"
+        "              color=\"rgb(231,76,60)\", formato_y=\".2f\", sufijo=\"%\").show()\n",
+        "tabla_y_descarga(ipc, \"ipc_variacion\", label_valor=\"Variación (%)\")"
       ],
-      "id": "cd5a89c2",
+      "id": "635f9c98",
       "execution_count": null,
       "outputs": []
     }
