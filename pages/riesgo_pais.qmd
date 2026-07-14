@@ -378,8 +378,7 @@ Fuente de los datos
 ::: {.g-col-12 .g-col-md-6}
 Metodología
 : El EMBI Global Diversified es calculado y publicado por J.P.
-Morgan; esta página reutiliza la serie histórica que el Banco
-Central de Chile republica en su sitio de estadísticas.
+Morgan; esta página reutiliza la serie histórica que el BCRD republica en su sitio de estadísticas.
 :::
 :::
 :::
