@@ -2,7 +2,7 @@
 
 Hub de información económica sobre Chile y el mundo, construido con datos públicos y visualizaciones interactivas para el público general.
 
-🌐 **Sitio web**: [economia-y-politicas-publicas.github.io/mi-proyecto-datos](https://economia-y-politicas-publicas.github.io/mi-proyecto-datos/)
+🌐 **Sitio web**: [economia-y-politicas-publicas.github.io/mi-proyecto-datos](https://economia-y-politicas-publicas.github.io/chiledatos/)
 
 ---
 
@@ -28,7 +28,6 @@ Todos los datos son públicos y verificables:
 - [Dipres](https://www.dipres.gob.cl) — Finanzas públicas y presupuesto
 - [Banco Mundial](https://data.worldbank.org) — Comparaciones internacionales
 - [CEPAL](https://estadisticas.cepal.org) — América Latina
-- [MINEDUC](https://datosabiertos.mineduc.cl) — Educación
 
 ---
 
@@ -47,9 +46,8 @@ Este sitio está construido con herramientas de código abierto:
 
 ¿Tienes datos, correcciones o sugerencias? Puedes:
 
-1. Abrir un [Issue](https://github.com/Economia-y-politicas-publicas/mi-proyecto-datos/issues) con tu sugerencia
-2. Hacer un Pull Request con tus cambios
-3. Escribirnos a economiapp.contacto@gmail.com
+
+Escribirnos a economiapp.contacto@gmail.com
 
 ---
 
