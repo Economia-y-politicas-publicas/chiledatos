@@ -247,6 +247,11 @@ prestamo_neto_endeudamiento_neto = obtener_serie("F051.BT04.FLU.M.D.CLP.T")
 ```{python}
 import plotly.express as px
 import pandas as pd
+import os
+
+os.makedirs("data", exist_ok=True)
+df_ancho.to_csv("data/operaciones_gobierno.csv", index=False)
+
 
 def agregar_trimestre(df_):
     """Agrega columna 'trimestre' en formato 'Trim I 2022' para eje categórico."""

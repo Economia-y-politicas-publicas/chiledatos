@@ -10,7 +10,7 @@
         "date: last-modified\n",
         "---"
       ],
-      "id": "9e103ee8"
+      "id": "0d3c0dae"
     },
     {
       "cell_type": "code",
@@ -260,7 +260,7 @@
       "source": [
         "## 1. Gobierno municipal"
       ],
-      "id": "b2737108"
+      "id": "46854ab0"
     },
     {
       "cell_type": "code",
@@ -268,6 +268,11 @@
       "source": [
         "import plotly.express as px\n",
         "import pandas as pd\n",
+        "import os\n",
+        "\n",
+        "os.makedirs(\"data\", exist_ok=True)\n",
+        "df_ancho.to_csv(\"data/operaciones_gobierno.csv\", index=False)\n",
+        "\n",
         "\n",
         "def agregar_trimestre(df_):\n",
         "    \"\"\"Agrega columna 'trimestre' en formato 'Trim I 2022' para eje categórico.\"\"\"\n",
@@ -299,7 +304,7 @@
         "fig.update_xaxes(matches=None, showticklabels=True)\n",
         "fig.show()"
       ],
-      "id": "dd7f5d2d",
+      "id": "249d2b74",
       "execution_count": null,
       "outputs": []
     },
@@ -331,7 +336,7 @@
         ")\n",
         "total_ingresos = df[[\"fecha\", \"total_ingresos\"]].rename(columns={\"total_ingresos\": \"valor\"})"
       ],
-      "id": "2440e08f",
+      "id": "f2234043",
       "execution_count": null,
       "outputs": []
     },
@@ -345,7 +350,7 @@
         "\n",
         "La deuda del Gobierno Central agrupa las obligaciones financieras contraídas directamente por el fisco (bonos soberanos, créditos, etc.). La **deuda bruta** corresponde al total de pasivos sin descontar activos financieros; la **deuda neta** resta los activos líquidos que el Estado mantiene (como el Fondo de Estabilización Económica y Social), por lo que suele ser más baja y refleja mejor la posición financiera real del fisco."
       ],
-      "id": "5de7a8c7"
+      "id": "5c3153ee"
     },
     {
       "cell_type": "code",
@@ -353,7 +358,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_gc\", \"deuda_neta_gc\", \"Gobierno Central\").show()"
       ],
-      "id": "cbe7bb67",
+      "id": "16d28f3f",
       "execution_count": null,
       "outputs": []
     },
@@ -365,7 +370,7 @@
         "\n",
         "Corresponde a los pasivos financieros del Banco Central de Chile, originados principalmente por instrumentos de política monetaria (como los PDBC y PRBC) y las obligaciones asumidas durante la capitalización del organismo en los años 80-90. A diferencia del Gobierno Central, esta deuda no depende del gasto fiscal, sino de decisiones de política monetaria."
       ],
-      "id": "d5126700"
+      "id": "1cf7a563"
     },
     {
       "cell_type": "code",
@@ -373,7 +378,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_bc\", \"deuda_neta_bc\", \"Banco Central\").show()"
       ],
-      "id": "f418609f",
+      "id": "23838959",
       "execution_count": null,
       "outputs": []
     },
@@ -385,7 +390,7 @@
         "\n",
         "Suma la deuda del Gobierno Central, el Banco Central y las empresas públicas, evitando el doble conteo de obligaciones cruzadas entre estas entidades. Es la medida más completa para dimensionar el endeudamiento total del Estado chileno frente al mercado y organismos internacionales."
       ],
-      "id": "e983fcb0"
+      "id": "1dc00b5b"
     },
     {
       "cell_type": "code",
@@ -393,7 +398,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_sp\", \"deuda_neta_sp\", \"Sector Público Consolidado\").show()"
       ],
-      "id": "a3f1ff51",
+      "id": "d6550438",
       "execution_count": null,
       "outputs": []
     },
@@ -405,7 +410,7 @@
         "\n",
         "Incluye la deuda de empresas estatales como Codelco, ENAP, Metro y otras sociedades del Estado. A diferencia del Gobierno Central, esta deuda suele estar asociada a financiamiento de proyectos de inversión productiva (minería, energía, infraestructura) más que a gasto corriente."
       ],
-      "id": "81ad3093"
+      "id": "af34ec0c"
     },
     {
       "cell_type": "code",
@@ -413,7 +418,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_ep\", \"deuda_neta_ep\", \"Empresas Públicas\").show()"
       ],
-      "id": "743db260",
+      "id": "375a9308",
       "execution_count": null,
       "outputs": []
     },
@@ -431,7 +436,7 @@
         "\n",
         "El **FEES** (Fondo de Estabilización Económica y Social) financia el déficit fiscal en años de bajo crecimiento o bajo precio del cobre; el **FRP** (Fondo de Reserva de Pensiones) respalda obligaciones previsionales del Estado (pensiones básicas solidarias). El total consolidado es la suma de ambos."
       ],
-      "id": "74d960ff"
+      "id": "5e96b586"
     },
     {
       "cell_type": "code",
@@ -447,7 +452,7 @@
         "    ytitle=\"Millones de USD\",\n",
         ").show()"
       ],
-      "id": "85f1f78c",
+      "id": "4f2b453e",
       "execution_count": null,
       "outputs": []
     },
@@ -459,7 +464,7 @@
         "\n",
         "Son recursos de caja del Tesoro Público no clasificados como fondos soberanos, mantenidos tanto en pesos chilenos como en dólares. Reflejan la liquidez disponible del fisco para necesidades de financiamiento de corto plazo, independiente de los fondos de ahorro de largo plazo."
       ],
-      "id": "514fea7a"
+      "id": "3aa4a464"
     },
     {
       "cell_type": "code",
@@ -475,7 +480,7 @@
         "    ytitle=\"Millones de USD\",\n",
         ").show()"
       ],
-      "id": "6d3a53c5",
+      "id": "39d11bc9",
       "execution_count": null,
       "outputs": []
     },
@@ -487,7 +492,7 @@
         "\n",
         "Este fondo respalda el financiamiento de becas y créditos estudiantiles del Estado, sirviendo como reserva específica para asegurar la continuidad de los beneficios educacionales independiente del ciclo fiscal."
       ],
-      "id": "b88838b0"
+      "id": "2644e5a5"
     },
     {
       "cell_type": "code",
@@ -496,7 +501,7 @@
         "grafico_linea(fondoeduc, \"Fondos para la Educación (FpE)\",\n",
         "              \"Millones de USD\", color=\"rgb(243,156,18)\").show()"
       ],
-      "id": "e0631533",
+      "id": "6598998e",
       "execution_count": null,
       "outputs": []
     },
@@ -508,7 +513,7 @@
         "\n",
         "Financia proyectos de inversión e infraestructura en regiones, con el objetivo de complementar el gasto de los gobiernos regionales y reducir brechas de desarrollo territorial."
       ],
-      "id": "3b7eae8f"
+      "id": "f8040b6f"
     },
     {
       "cell_type": "code",
@@ -517,7 +522,7 @@
         "grafico_linea(fapr, \"Fondo de Apoyo a las Regiones (FAPR)\",\n",
         "              \"Millones de USD\", color=\"rgb(22,160,133)\").show()"
       ],
-      "id": "f3949048",
+      "id": "88701f00",
       "execution_count": null,
       "outputs": []
     },
@@ -529,7 +534,7 @@
         "\n",
         "Respalda el financiamiento de tratamientos médicos de alto costo no cubiertos completamente por el sistema de salud regular (Ley Ricarte Soto), garantizando acceso a terapias de alto valor para enfermedades de baja frecuencia pero alto impacto financiero para las familias."
       ],
-      "id": "0fdc96f4"
+      "id": "937c92d9"
     },
     {
       "cell_type": "code",
@@ -539,7 +544,7 @@
         "              \"Fondo para Diagnósticos y Tratamientos de Alto Costo\",\n",
         "              \"Millones de USD\", color=\"rgb(231,76,60)\").show()"
       ],
-      "id": "758b50fe",
+      "id": "bfb2008a",
       "execution_count": null,
       "outputs": []
     }
