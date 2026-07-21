@@ -10,7 +10,7 @@
         "date: last-modified\n",
         "---"
       ],
-      "id": "b0d48866"
+      "id": "1f3b7861"
     },
     {
       "cell_type": "code",
@@ -260,42 +260,37 @@
       "source": [
         "## 1. Gobierno municipal"
       ],
-      "id": "47bc03ee"
+      "id": "25cd6800"
     },
     {
       "cell_type": "code",
       "metadata": {},
       "source": [
         "import plotly.express as px\n",
+        "import pandas as pd\n",
         "\n",
-        "fig_ingresos = px.area(\n",
-        "    total_ingresos, x=\"fecha\", y=\"valor\",\n",
-        "    title=\"Total Ingresos del Gobierno Municipal (trimestral)\",\n",
-        ")\n",
-        "fig_ingresos.update_layout(\n",
-        "    xaxis_title=\"Trimestre\", yaxis_title=\"Millones de CLP\", template=\"plotly_white\",\n",
-        ")\n",
-        "fig_ingresos.show()\n",
+        "# Combinar las tres series en un solo DataFrame largo, con columna \"serie\"\n",
+        "df_ingresos = agregar_trimestre(total_ingresos)[[\"fecha\", \"trimestre\", \"valor\"]].assign(serie=\"Total ingresos\")\n",
+        "df_gastos = agregar_trimestre(total_gastos)[[\"fecha\", \"trimestre\", \"valor\"]].assign(serie=\"Total gastos\")\n",
+        "df_prestamo = agregar_trimestre(prestamo_neto_endeudamiento_neto)[[\"fecha\", \"trimestre\", \"valor\"]].assign(serie=\"Préstamo neto/Endeudamiento neto\")\n",
         "\n",
-        "fig_gastos = px.area(\n",
-        "    total_gastos, x=\"fecha\", y=\"valor\",\n",
-        "    title=\"Total Gastos del Gobierno Municipal (trimestral)\",\n",
-        ")\n",
-        "fig_gastos.update_layout(\n",
-        "    xaxis_title=\"Trimestre\", yaxis_title=\"Millones de CLP\", template=\"plotly_white\",\n",
-        ")\n",
-        "fig_gastos.show()\n",
+        "df_largo = pd.concat([df_ingresos, df_gastos, df_prestamo], ignore_index=True)\n",
         "\n",
-        "fig_prestamo = px.area(\n",
-        "    prestamo_neto_endeudamiento_neto, x=\"fecha\", y=\"valor\",\n",
-        "    title=\"Préstamo neto/Endeudamiento neto (trimestral)\",\n",
+        "fig = px.area(\n",
+        "    df_largo,\n",
+        "    x=\"fecha\",\n",
+        "    y=\"valor\",\n",
+        "    facet_col=\"serie\",\n",
+        "    facet_col_wrap=2,\n",
+        "    color=\"serie\",\n",
+        "    title=\"Operaciones no financieras del Gobierno (trimestral)\",\n",
         ")\n",
-        "fig_prestamo.update_layout(\n",
-        "    xaxis_title=\"Trimestre\", yaxis_title=\"Millones de CLP\", template=\"plotly_white\",\n",
-        ")\n",
-        "fig_prestamo.show()"
+        "fig.update_layout(template=\"plotly_white\")\n",
+        "fig.update_yaxes(matches=None)  # para que cada subplot tenga su propia escala si los montos difieren mucho\n",
+        "fig.update_xaxes(matches=None, showticklabels=True)  # mostrar ticks de fecha en todos los subplots, no solo el de abajo\n",
+        "fig.show()"
       ],
-      "id": "5bcae887",
+      "id": "80b153f6",
       "execution_count": null,
       "outputs": []
     },
@@ -327,7 +322,7 @@
         ")\n",
         "total_ingresos = df[[\"fecha\", \"total_ingresos\"]].rename(columns={\"total_ingresos\": \"valor\"})"
       ],
-      "id": "1e7a0b19",
+      "id": "fa9c5b7f",
       "execution_count": null,
       "outputs": []
     },
@@ -341,7 +336,7 @@
         "\n",
         "La deuda del Gobierno Central agrupa las obligaciones financieras contraídas directamente por el fisco (bonos soberanos, créditos, etc.). La **deuda bruta** corresponde al total de pasivos sin descontar activos financieros; la **deuda neta** resta los activos líquidos que el Estado mantiene (como el Fondo de Estabilización Económica y Social), por lo que suele ser más baja y refleja mejor la posición financiera real del fisco."
       ],
-      "id": "9456c1d1"
+      "id": "bf742ad0"
     },
     {
       "cell_type": "code",
@@ -349,7 +344,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_gc\", \"deuda_neta_gc\", \"Gobierno Central\").show()"
       ],
-      "id": "ceb888cd",
+      "id": "432091df",
       "execution_count": null,
       "outputs": []
     },
@@ -361,7 +356,7 @@
         "\n",
         "Corresponde a los pasivos financieros del Banco Central de Chile, originados principalmente por instrumentos de política monetaria (como los PDBC y PRBC) y las obligaciones asumidas durante la capitalización del organismo en los años 80-90. A diferencia del Gobierno Central, esta deuda no depende del gasto fiscal, sino de decisiones de política monetaria."
       ],
-      "id": "277eb329"
+      "id": "b7eb9d1d"
     },
     {
       "cell_type": "code",
@@ -369,7 +364,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_bc\", \"deuda_neta_bc\", \"Banco Central\").show()"
       ],
-      "id": "0b080f25",
+      "id": "4b74dbea",
       "execution_count": null,
       "outputs": []
     },
@@ -381,7 +376,7 @@
         "\n",
         "Suma la deuda del Gobierno Central, el Banco Central y las empresas públicas, evitando el doble conteo de obligaciones cruzadas entre estas entidades. Es la medida más completa para dimensionar el endeudamiento total del Estado chileno frente al mercado y organismos internacionales."
       ],
-      "id": "eb5e6585"
+      "id": "9dee4d96"
     },
     {
       "cell_type": "code",
@@ -389,7 +384,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_sp\", \"deuda_neta_sp\", \"Sector Público Consolidado\").show()"
       ],
-      "id": "edc5eb9d",
+      "id": "177f3575",
       "execution_count": null,
       "outputs": []
     },
@@ -401,7 +396,7 @@
         "\n",
         "Incluye la deuda de empresas estatales como Codelco, ENAP, Metro y otras sociedades del Estado. A diferencia del Gobierno Central, esta deuda suele estar asociada a financiamiento de proyectos de inversión productiva (minería, energía, infraestructura) más que a gasto corriente."
       ],
-      "id": "65028dc4"
+      "id": "f3aef88c"
     },
     {
       "cell_type": "code",
@@ -409,7 +404,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_ep\", \"deuda_neta_ep\", \"Empresas Públicas\").show()"
       ],
-      "id": "7642e4f3",
+      "id": "07b9795d",
       "execution_count": null,
       "outputs": []
     },
@@ -427,7 +422,7 @@
         "\n",
         "El **FEES** (Fondo de Estabilización Económica y Social) financia el déficit fiscal en años de bajo crecimiento o bajo precio del cobre; el **FRP** (Fondo de Reserva de Pensiones) respalda obligaciones previsionales del Estado (pensiones básicas solidarias). El total consolidado es la suma de ambos."
       ],
-      "id": "e500c019"
+      "id": "9010d7a7"
     },
     {
       "cell_type": "code",
@@ -443,7 +438,7 @@
         "    ytitle=\"Millones de USD\",\n",
         ").show()"
       ],
-      "id": "d39da783",
+      "id": "6c86a1f7",
       "execution_count": null,
       "outputs": []
     },
@@ -455,7 +450,7 @@
         "\n",
         "Son recursos de caja del Tesoro Público no clasificados como fondos soberanos, mantenidos tanto en pesos chilenos como en dólares. Reflejan la liquidez disponible del fisco para necesidades de financiamiento de corto plazo, independiente de los fondos de ahorro de largo plazo."
       ],
-      "id": "784d5e0b"
+      "id": "ccc45f9f"
     },
     {
       "cell_type": "code",
@@ -471,7 +466,7 @@
         "    ytitle=\"Millones de USD\",\n",
         ").show()"
       ],
-      "id": "0ee7ffc9",
+      "id": "5c9ad77b",
       "execution_count": null,
       "outputs": []
     },
@@ -483,7 +478,7 @@
         "\n",
         "Este fondo respalda el financiamiento de becas y créditos estudiantiles del Estado, sirviendo como reserva específica para asegurar la continuidad de los beneficios educacionales independiente del ciclo fiscal."
       ],
-      "id": "3b2be674"
+      "id": "12f2ac72"
     },
     {
       "cell_type": "code",
@@ -492,7 +487,7 @@
         "grafico_linea(fondoeduc, \"Fondos para la Educación (FpE)\",\n",
         "              \"Millones de USD\", color=\"rgb(243,156,18)\").show()"
       ],
-      "id": "6b4b53d8",
+      "id": "41df37a6",
       "execution_count": null,
       "outputs": []
     },
@@ -504,7 +499,7 @@
         "\n",
         "Financia proyectos de inversión e infraestructura en regiones, con el objetivo de complementar el gasto de los gobiernos regionales y reducir brechas de desarrollo territorial."
       ],
-      "id": "fcc28ca7"
+      "id": "237887a4"
     },
     {
       "cell_type": "code",
@@ -513,7 +508,7 @@
         "grafico_linea(fapr, \"Fondo de Apoyo a las Regiones (FAPR)\",\n",
         "              \"Millones de USD\", color=\"rgb(22,160,133)\").show()"
       ],
-      "id": "faacb82a",
+      "id": "fc690516",
       "execution_count": null,
       "outputs": []
     },
@@ -525,7 +520,7 @@
         "\n",
         "Respalda el financiamiento de tratamientos médicos de alto costo no cubiertos completamente por el sistema de salud regular (Ley Ricarte Soto), garantizando acceso a terapias de alto valor para enfermedades de baja frecuencia pero alto impacto financiero para las familias."
       ],
-      "id": "878edfe3"
+      "id": "6103053c"
     },
     {
       "cell_type": "code",
@@ -535,7 +530,7 @@
         "              \"Fondo para Diagnósticos y Tratamientos de Alto Costo\",\n",
         "              \"Millones de USD\", color=\"rgb(231,76,60)\").show()"
       ],
-      "id": "7f350945",
+      "id": "8f9419b0",
       "execution_count": null,
       "outputs": []
     }
