@@ -10,7 +10,7 @@
         "date: last-modified\n",
         "---"
       ],
-      "id": "1f3b7861"
+      "id": "9e103ee8"
     },
     {
       "cell_type": "code",
@@ -260,7 +260,7 @@
       "source": [
         "## 1. Gobierno municipal"
       ],
-      "id": "25cd6800"
+      "id": "b2737108"
     },
     {
       "cell_type": "code",
@@ -268,6 +268,15 @@
       "source": [
         "import plotly.express as px\n",
         "import pandas as pd\n",
+        "\n",
+        "def agregar_trimestre(df_):\n",
+        "    \"\"\"Agrega columna 'trimestre' en formato 'Trim I 2022' para eje categórico.\"\"\"\n",
+        "    df_ = df_.copy()\n",
+        "    df_[\"trimestre\"] = (\n",
+        "        \"Trim \" + df_[\"fecha\"].dt.quarter.map({1: \"I\", 2: \"II\", 3: \"III\", 4: \"IV\"})\n",
+        "        + \" \" + df_[\"fecha\"].dt.year.astype(str)\n",
+        "    )\n",
+        "    return df_\n",
         "\n",
         "# Combinar las tres series en un solo DataFrame largo, con columna \"serie\"\n",
         "df_ingresos = agregar_trimestre(total_ingresos)[[\"fecha\", \"trimestre\", \"valor\"]].assign(serie=\"Total ingresos\")\n",
@@ -286,11 +295,11 @@
         "    title=\"Operaciones no financieras del Gobierno (trimestral)\",\n",
         ")\n",
         "fig.update_layout(template=\"plotly_white\")\n",
-        "fig.update_yaxes(matches=None)  # para que cada subplot tenga su propia escala si los montos difieren mucho\n",
-        "fig.update_xaxes(matches=None, showticklabels=True)  # mostrar ticks de fecha en todos los subplots, no solo el de abajo\n",
+        "fig.update_yaxes(matches=None)\n",
+        "fig.update_xaxes(matches=None, showticklabels=True)\n",
         "fig.show()"
       ],
-      "id": "80b153f6",
+      "id": "dd7f5d2d",
       "execution_count": null,
       "outputs": []
     },
@@ -322,7 +331,7 @@
         ")\n",
         "total_ingresos = df[[\"fecha\", \"total_ingresos\"]].rename(columns={\"total_ingresos\": \"valor\"})"
       ],
-      "id": "fa9c5b7f",
+      "id": "2440e08f",
       "execution_count": null,
       "outputs": []
     },
@@ -336,7 +345,7 @@
         "\n",
         "La deuda del Gobierno Central agrupa las obligaciones financieras contraídas directamente por el fisco (bonos soberanos, créditos, etc.). La **deuda bruta** corresponde al total de pasivos sin descontar activos financieros; la **deuda neta** resta los activos líquidos que el Estado mantiene (como el Fondo de Estabilización Económica y Social), por lo que suele ser más baja y refleja mejor la posición financiera real del fisco."
       ],
-      "id": "bf742ad0"
+      "id": "5de7a8c7"
     },
     {
       "cell_type": "code",
@@ -344,7 +353,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_gc\", \"deuda_neta_gc\", \"Gobierno Central\").show()"
       ],
-      "id": "432091df",
+      "id": "cbe7bb67",
       "execution_count": null,
       "outputs": []
     },
@@ -356,7 +365,7 @@
         "\n",
         "Corresponde a los pasivos financieros del Banco Central de Chile, originados principalmente por instrumentos de política monetaria (como los PDBC y PRBC) y las obligaciones asumidas durante la capitalización del organismo en los años 80-90. A diferencia del Gobierno Central, esta deuda no depende del gasto fiscal, sino de decisiones de política monetaria."
       ],
-      "id": "b7eb9d1d"
+      "id": "d5126700"
     },
     {
       "cell_type": "code",
@@ -364,7 +373,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_bc\", \"deuda_neta_bc\", \"Banco Central\").show()"
       ],
-      "id": "4b74dbea",
+      "id": "f418609f",
       "execution_count": null,
       "outputs": []
     },
@@ -376,7 +385,7 @@
         "\n",
         "Suma la deuda del Gobierno Central, el Banco Central y las empresas públicas, evitando el doble conteo de obligaciones cruzadas entre estas entidades. Es la medida más completa para dimensionar el endeudamiento total del Estado chileno frente al mercado y organismos internacionales."
       ],
-      "id": "9dee4d96"
+      "id": "e983fcb0"
     },
     {
       "cell_type": "code",
@@ -384,7 +393,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_sp\", \"deuda_neta_sp\", \"Sector Público Consolidado\").show()"
       ],
-      "id": "177f3575",
+      "id": "a3f1ff51",
       "execution_count": null,
       "outputs": []
     },
@@ -396,7 +405,7 @@
         "\n",
         "Incluye la deuda de empresas estatales como Codelco, ENAP, Metro y otras sociedades del Estado. A diferencia del Gobierno Central, esta deuda suele estar asociada a financiamiento de proyectos de inversión productiva (minería, energía, infraestructura) más que a gasto corriente."
       ],
-      "id": "f3aef88c"
+      "id": "81ad3093"
     },
     {
       "cell_type": "code",
@@ -404,7 +413,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_ep\", \"deuda_neta_ep\", \"Empresas Públicas\").show()"
       ],
-      "id": "07b9795d",
+      "id": "743db260",
       "execution_count": null,
       "outputs": []
     },
@@ -422,7 +431,7 @@
         "\n",
         "El **FEES** (Fondo de Estabilización Económica y Social) financia el déficit fiscal en años de bajo crecimiento o bajo precio del cobre; el **FRP** (Fondo de Reserva de Pensiones) respalda obligaciones previsionales del Estado (pensiones básicas solidarias). El total consolidado es la suma de ambos."
       ],
-      "id": "9010d7a7"
+      "id": "74d960ff"
     },
     {
       "cell_type": "code",
@@ -438,7 +447,7 @@
         "    ytitle=\"Millones de USD\",\n",
         ").show()"
       ],
-      "id": "6c86a1f7",
+      "id": "85f1f78c",
       "execution_count": null,
       "outputs": []
     },
@@ -450,7 +459,7 @@
         "\n",
         "Son recursos de caja del Tesoro Público no clasificados como fondos soberanos, mantenidos tanto en pesos chilenos como en dólares. Reflejan la liquidez disponible del fisco para necesidades de financiamiento de corto plazo, independiente de los fondos de ahorro de largo plazo."
       ],
-      "id": "ccc45f9f"
+      "id": "514fea7a"
     },
     {
       "cell_type": "code",
@@ -466,7 +475,7 @@
         "    ytitle=\"Millones de USD\",\n",
         ").show()"
       ],
-      "id": "5c9ad77b",
+      "id": "6d3a53c5",
       "execution_count": null,
       "outputs": []
     },
@@ -478,7 +487,7 @@
         "\n",
         "Este fondo respalda el financiamiento de becas y créditos estudiantiles del Estado, sirviendo como reserva específica para asegurar la continuidad de los beneficios educacionales independiente del ciclo fiscal."
       ],
-      "id": "12f2ac72"
+      "id": "b88838b0"
     },
     {
       "cell_type": "code",
@@ -487,7 +496,7 @@
         "grafico_linea(fondoeduc, \"Fondos para la Educación (FpE)\",\n",
         "              \"Millones de USD\", color=\"rgb(243,156,18)\").show()"
       ],
-      "id": "41df37a6",
+      "id": "e0631533",
       "execution_count": null,
       "outputs": []
     },
@@ -499,7 +508,7 @@
         "\n",
         "Financia proyectos de inversión e infraestructura en regiones, con el objetivo de complementar el gasto de los gobiernos regionales y reducir brechas de desarrollo territorial."
       ],
-      "id": "237887a4"
+      "id": "3b7eae8f"
     },
     {
       "cell_type": "code",
@@ -508,7 +517,7 @@
         "grafico_linea(fapr, \"Fondo de Apoyo a las Regiones (FAPR)\",\n",
         "              \"Millones de USD\", color=\"rgb(22,160,133)\").show()"
       ],
-      "id": "fc690516",
+      "id": "f3949048",
       "execution_count": null,
       "outputs": []
     },
@@ -520,7 +529,7 @@
         "\n",
         "Respalda el financiamiento de tratamientos médicos de alto costo no cubiertos completamente por el sistema de salud regular (Ley Ricarte Soto), garantizando acceso a terapias de alto valor para enfermedades de baja frecuencia pero alto impacto financiero para las familias."
       ],
-      "id": "6103053c"
+      "id": "0fdc96f4"
     },
     {
       "cell_type": "code",
@@ -530,7 +539,7 @@
         "              \"Fondo para Diagnósticos y Tratamientos de Alto Costo\",\n",
         "              \"Millones de USD\", color=\"rgb(231,76,60)\").show()"
       ],
-      "id": "8f9419b0",
+      "id": "758b50fe",
       "execution_count": null,
       "outputs": []
     }

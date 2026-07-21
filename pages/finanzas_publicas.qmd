@@ -248,6 +248,15 @@ prestamo_neto_endeudamiento_neto = obtener_serie("F051.BT04.FLU.M.D.CLP.T")
 import plotly.express as px
 import pandas as pd
 
+def agregar_trimestre(df_):
+    """Agrega columna 'trimestre' en formato 'Trim I 2022' para eje categórico."""
+    df_ = df_.copy()
+    df_["trimestre"] = (
+        "Trim " + df_["fecha"].dt.quarter.map({1: "I", 2: "II", 3: "III", 4: "IV"})
+        + " " + df_["fecha"].dt.year.astype(str)
+    )
+    return df_
+
 # Combinar las tres series en un solo DataFrame largo, con columna "serie"
 df_ingresos = agregar_trimestre(total_ingresos)[["fecha", "trimestre", "valor"]].assign(serie="Total ingresos")
 df_gastos = agregar_trimestre(total_gastos)[["fecha", "trimestre", "valor"]].assign(serie="Total gastos")
@@ -265,8 +274,8 @@ fig = px.area(
     title="Operaciones no financieras del Gobierno (trimestral)",
 )
 fig.update_layout(template="plotly_white")
-fig.update_yaxes(matches=None)  # para que cada subplot tenga su propia escala si los montos difieren mucho
-fig.update_xaxes(matches=None, showticklabels=True)  # mostrar ticks de fecha en todos los subplots, no solo el de abajo
+fig.update_yaxes(matches=None)
+fig.update_xaxes(matches=None, showticklabels=True)
 fig.show()
 ```
 
