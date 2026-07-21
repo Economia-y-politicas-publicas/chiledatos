@@ -246,20 +246,49 @@ prestamo_neto_endeudamiento_neto = obtener_serie("F051.BT04.FLU.M.D.CLP.T")
 ## 1. Gobierno municipal
 
 ```{python}
-grafico_multi(
-    trazas=[
-        (total_ingresos, "total_ingresos ", "#2980b9", 3,   "solid"),
-        (total_gastos,"total_gastos", "#27ae60", 1.5, "dash"),
-        (prestamo_neto_endeudamiento_neto,"prestamo_neto_endeudamiento_neto", "#8e44ad", 1.5, "dot"),
-    ],
-    titulo="Fondos Soberanos: Total, FEES y FRP (millones de USD)",
-    ytitle="Millones de USD",
-).show()
+
+import plotly.express as px
+
+fig = px.area(
+    total_ingresos,
+    x="fecha",
+    y="valor",
+    title="Total Ingresos del Gobierno Municipal (trimestral)",
+)
+
+fig = px.area(
+    total_gastos,
+    x="fecha",
+    y="valor",
+    title="Total Ingresos del Gobierno Municipal (trimestral)",
+)
+
+fig = px.area(
+    prestamo_neto_endeudamiento_neto,
+    x="fecha",
+    y="valor",
+    title="Total Ingresos del Gobierno Municipal (trimestral)",
+)
+
+fig.update_layout(
+    xaxis_title="Trimestre",
+    yaxis_title="Millones de CLP",
+    template="plotly_white",
+)
+fig.show()
+
 ```
 
+```{python}
 
-
-
+for codigo in ["F051.BT02.FLU.M.D.CLP.T", "F051.BT03.FLU.M.D.CLP.T", "F051.BT04.FLU.M.D.CLP.T"]:
+    r = requests.get(URL_API, params={
+        "user": usuario, "pass": password,
+        "function": "GetSeries", "timeseries": codigo,
+        "firstdate": "2022-01-01", "lastdate": "2026-07-21", "format": "json",
+    }, timeout=10)
+    print(codigo, r.status_code, r.text[:300])
+```
 
 
 
