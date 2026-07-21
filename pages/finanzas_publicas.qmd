@@ -273,6 +273,15 @@ fig_gastos.add_trace(go.Scatter(
 ))
 
 fig_gastos.update_layout(
+    barmode="stack",
+    title=dict(text="Composición de gastos del Gobierno (trimestral)", x=0.5, xanchor="center"),
+    xaxis=dict(title="", tickangle=45, showgrid=False),
+    yaxis=dict(title="Millones de CLP", tickformat=",.0f", gridcolor="rgba(0,0,0,0.08)"),
+    template="plotly_white",
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    hovermode="x unified",
+    height=600,
     legend=dict(
         orientation="h",
         entrywidth=0.33,
@@ -280,7 +289,7 @@ fig_gastos.update_layout(
         yanchor="bottom", y=-0.45,
         xanchor="center", x=0.5,
     ),
-    margin=dict(l=70, r=40, t=80, b=160),  # más espacio abajo porque ahora ocupa 3 filas
+    margin=dict(l=70, r=40, t=80, b=160),
 )
 
 
@@ -480,17 +489,15 @@ fig_activos.add_trace(go.Scatter(
 fig_activos.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.5)
 
 fig_activos.update_layout(
-    barmode="relative",
-    title=dict(text="Composición de adquisición neta de activos no financieros (trimestral)", x=0.5, xanchor="center"),
-    xaxis=dict(title="", tickangle=45, showgrid=False),
-    yaxis=dict(title="Millones de CLP", tickformat=",.0f", gridcolor="rgba(0,0,0,0.08)"),
-    template="plotly_white",
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    hovermode="x unified",
-    height=600,
-    legend=dict(orientation="h", entrywidth=0.33, entrywidthmode="fraction", yanchor="bottom", y=-0.45, xanchor="center", x=0.5),
-    margin=dict(l=70, r=40, t=80, b=160),
+    legend=dict(
+        orientation="h",
+        entrywidth=0.48,           # 2 columnas en vez de 3
+        entrywidthmode="fraction",
+        yanchor="bottom", y=-0.5,   # un poco más abajo, por si quedan 3 filas
+        xanchor="center", x=0.5,
+        font=dict(size=11),         # texto más chico para que quepa mejor
+    ),
+    margin=dict(l=70, r=40, t=80, b=180),
 )
 
 fig_activos.show()
