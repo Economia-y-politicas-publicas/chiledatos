@@ -40,7 +40,7 @@ usuario  = os.environ.get("BCENTRAL_USER")
 password = os.environ.get("BCENTRAL_PASS")
 URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
 
-def obtener_serie(codigo, dias=1095):
+def obtener_serie(codigo, dias=3650):
     hoy    = datetime.today()
     inicio = (hoy - timedelta(days=dias)).strftime("%Y-%m-%d")
     fin    = hoy.strftime("%Y-%m-%d")
@@ -245,42 +245,39 @@ prestamo_neto_endeudamiento_neto = obtener_serie("F051.BT04.FLU.M.D.CLP.T")
 
 ## 1. Gobierno municipal
 ```{python}
-import plotly.express as px
-import pandas as pd
-import os
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-os.makedirs("data", exist_ok=True)
-df_ancho.to_csv("data/operaciones_gobierno.csv", index=False)
+series_a_graficar = [
+    (total_ingresos, "Total ingresos", "#2980b9"),
+    (total_gastos, "Total gastos", "#e74c3c"),
+    (prestamo_neto_endeudamiento_neto, "Préstamo neto/Endeudamiento neto", "#27ae60"),
+]
 
-
-def agregar_trimestre(df_):
-    """Agrega columna 'trimestre' en formato 'Trim I 2022' para eje categórico."""
-    df_ = df_.copy()
-    df_["trimestre"] = (
-        "Trim " + df_["fecha"].dt.quarter.map({1: "I", 2: "II", 3: "III", 4: "IV"})
-        + " " + df_["fecha"].dt.year.astype(str)
-    )
-    return df_
-
-# Combinar las tres series en un solo DataFrame largo, con columna "serie"
-df_ingresos = agregar_trimestre(total_ingresos)[["fecha", "trimestre", "valor"]].assign(serie="Total ingresos")
-df_gastos = agregar_trimestre(total_gastos)[["fecha", "trimestre", "valor"]].assign(serie="Total gastos")
-df_prestamo = agregar_trimestre(prestamo_neto_endeudamiento_neto)[["fecha", "trimestre", "valor"]].assign(serie="Préstamo neto/Endeudamiento neto")
-
-df_largo = pd.concat([df_ingresos, df_gastos, df_prestamo], ignore_index=True)
-
-fig = px.area(
-    df_largo,
-    x="fecha",
-    y="valor",
-    facet_col="serie",
-    facet_col_wrap=2,
-    color="serie",
-    title="Operaciones no financieras del Gobierno (trimestral)",
+fig = make_subplots(
+    rows=2, cols=2,
+    subplot_titles=[nombre for _, nombre, _ in series_a_graficar],
 )
-fig.update_layout(template="plotly_white")
-fig.update_yaxes(matches=None)
-fig.update_xaxes(matches=None, showticklabels=True)
+
+posiciones = [(1, 1), (1, 2), (2, 1)]
+
+for (df_, nombre, color), (row, col) in zip(series_a_graficar, posiciones):
+    fig.add_trace(
+        go.Scatter(
+            x=df_["fecha"], y=df_["valor"],
+            mode="lines", name=nombre,
+            line=dict(color=color, width=2),
+            fill="tozeroy",
+        ),
+        row=row, col=col,
+    )
+
+fig.update_layout(
+    title="Operaciones no financieras del Gobierno (trimestral)",
+    template="plotly_white",
+    height=700,
+    showlegend=False,
+)
 fig.show()
 ```
 
