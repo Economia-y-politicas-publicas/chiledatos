@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "0 12 * * 1-5"  # lunes a viernes a las 12:00 UTC
+    - cron: "0 12 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -28,6 +28,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -38,7 +39,7 @@ jobs:
           version: "1.5.57"
 
       - name: Render Quarto site
-        run: quarto render --cache-refresh
+        run: quarto render
         env:
           BCENTRAL_USER: ${{ secrets.BCENTRAL_USER }}
           BCENTRAL_PASS: ${{ secrets.BCENTRAL_PASS }}
@@ -52,11 +53,3 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        

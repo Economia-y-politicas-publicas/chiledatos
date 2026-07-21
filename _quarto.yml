@@ -55,7 +55,7 @@ format:
     fig-height: 5
 
 execute:
-  freeze: false
+  freeze: auto
   echo: false
   warning: false
   message: false

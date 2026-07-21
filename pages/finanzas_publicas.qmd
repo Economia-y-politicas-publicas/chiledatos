@@ -273,18 +273,16 @@ fig_gastos.add_trace(go.Scatter(
 ))
 
 fig_gastos.update_layout(
-    barmode="stack",
-    title=dict(text="Composición de gastos del Gobierno (trimestral)", x=0.5, xanchor="center"),
-    xaxis=dict(title="", tickangle=45, showgrid=False),
-    yaxis=dict(title="Millones de CLP", tickformat=",.0f", gridcolor="rgba(0,0,0,0.08)"),
-    template="plotly_white",
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    hovermode="x unified",
-    height=600,
-    legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="center", x=0.5),
-    margin=dict(l=70, r=40, t=80, b=120),
+    legend=dict(
+        orientation="h",
+        entrywidth=0.33,
+        entrywidthmode="fraction",
+        yanchor="bottom", y=-0.45,
+        xanchor="center", x=0.5,
+    ),
+    margin=dict(l=70, r=40, t=80, b=160),  # más espacio abajo porque ahora ocupa 3 filas
 )
+
 
 fig_gastos.show()
 ```
@@ -443,7 +441,59 @@ fig.show()
 
 
 ```{python}
+import plotly.graph_objects as go
 
+# 1. Ajustar signos según la fórmula GFSM:
+# Adquisición neta = Inversión + Transferencias de capital - Consumo Capital Fijo - Venta de activos físicos
+inversion_signed = inversion.assign(valor=inversion["valor"])
+transferencias_signed = transferencias_de_capital.assign(valor=transferencias_de_capital["valor"])
+ccf_signed = consumo_capital_fijo.assign(valor=-consumo_capital_fijo["valor"])       # resta → negativo
+venta_signed = venta_de_activos_fisicos.assign(valor=-venta_de_activos_fisicos["valor"])  # resta → negativo
+
+componentes_activos = [
+    (inversion_signed, "Inversión", "#2980b9"),
+    (transferencias_signed, "Transferencias de capital", "#e67e22"),
+    (ccf_signed, "Consumo Capital Fijo (resta)", "#c0392b"),
+    (venta_signed, "Venta de activos físicos (resta)", "#8e44ad"),
+]
+
+fig_activos = go.Figure()
+
+for df_, nombre, color in componentes_activos:
+    fig_activos.add_trace(go.Bar(
+        x=df_["fecha"], y=df_["valor"],
+        name=nombre,
+        marker_color=color,
+        hovertemplate=f"<b>{nombre}</b><br>%{{x|%b %Y}}: %{{y:,.0f}}<extra></extra>",
+    ))
+
+fig_activos.add_trace(go.Scatter(
+    x=adquisicion_neta_de_activos_no_financieros["fecha"],
+    y=adquisicion_neta_de_activos_no_financieros["valor"],
+    name="Adquisición neta total",
+    mode="lines+markers",
+    line=dict(color="black", width=2),
+    marker=dict(size=5, color="black"),
+    hovertemplate="<b>Adquisición neta total</b><br>%{x|%b %Y}: %{y:,.0f}<extra></extra>",
+))
+
+fig_activos.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.5)
+
+fig_activos.update_layout(
+    barmode="relative",
+    title=dict(text="Composición de adquisición neta de activos no financieros (trimestral)", x=0.5, xanchor="center"),
+    xaxis=dict(title="", tickangle=45, showgrid=False),
+    yaxis=dict(title="Millones de CLP", tickformat=",.0f", gridcolor="rgba(0,0,0,0.08)"),
+    template="plotly_white",
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    hovermode="x unified",
+    height=600,
+    legend=dict(orientation="h", entrywidth=0.33, entrywidthmode="fraction", yanchor="bottom", y=-0.45, xanchor="center", x=0.5),
+    margin=dict(l=70, r=40, t=80, b=160),
+)
+
+fig_activos.show()
 ```
 ---
 
