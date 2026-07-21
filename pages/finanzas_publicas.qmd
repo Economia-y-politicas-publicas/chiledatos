@@ -208,7 +208,67 @@ dolar                = obtener_serie("F051.M22.STO.C.Z.USD.M")
 fondoeduc            = obtener_serie("F051.C181.STO.C.Z.USD.M")
 fapr                 = obtener_serie("F051.M11.STO.C.Z.USD.M")
 tratamientoaltocosto = obtener_serie("F051.M12.STO.C.Z.USD.M")
+
+# Cargar series municipales operaciones NO financieras
+ingresos = obtener_serie("F051.AT01.FLU.M.D.CLP.T")
+ingresos_tributarios_netos = obtener_serie("F051.AT011.FLU.M.D.CLP.T")
+cobre_bruto = obtener_serie("F051.AT012.FLU.M.D.CLP.T")
+imposiciones_previsionales = obtener_serie("F051.AT013.FLU.M.D.CLP.T")
+donaciones = obtener_serie("F051.AT014.FLU.M.D.CLP.T")
+rentas_de_la_propiedad = obtener_serie("F051.AT015.FLU.M.D.CLP.T")
+ingresos_de_operacion = obtener_serie("F051.AT016.FLU.M.D.CLP.T")
+otros_ingresos = obtener_serie("F051.AT017.FLU.M.D.CLP.T")
+
+gastos = obtener_serie("F051.AT02.FLU.M.D.CLP.T")
+personal = obtener_serie("F051.AT021.FLU.M.D.CLP.T")
+bienes_y_servicios_de_consumo_y_produccion = obtener_serie("F051.AT022.FLU.M.D.CLP.T")
+intereses = obtener_serie("F051.AT023.FLU.M.D.CLP.T")
+subsidios_y_donaciones = obtener_serie("F051.AT024.FLU.M.D.CLP.T")
+prestaciones_previsionales = obtener_serie("F051.AT025.FLU.M.D.CLP.T")
+otros = obtener_serie("F051.AT026.FLU.M.D.CLP.T")
+
+resultado_operativo_bruto = obtener_serie("F051.AT03.FLU.M.D.CLP.T")
+
+adquisicion_neta_de_activos_no_financieros = obtener_serie("F051.BT01.FLU.M.D.CLP.T")
+venta_de_activos_fisicos = obtener_serie("F051.BT011.FLU.M.D.CLP.T")
+inversion = obtener_serie("F051.BT012.FLU.M.D.CLP.T")
+transferencias_de_capital = obtener_serie("F051.BT013.FLU.M.D.CLP.T")
+consumo_capital_fijo = obtener_serie("F051.BT014.FLU.M.D.CLP.T")
+
+total_ingresos = obtener_serie("F051.BT02.FLU.M.D.CLP.T")
+total_gastos = obtener_serie("F051.BT03.FLU.M.D.CLP.T")
+prestamo_neto_endeudamiento_neto = obtener_serie("F051.BT04.FLU.M.D.CLP.T")
+
+
 ```
+
+
+## 1. Gobierno municipal
+
+```{python}
+grafico_multi(
+    trazas=[
+        (total_ingresos, "total_ingresos ", "#2980b9", 3,   "solid"),
+        (total_gastos,"total_gastos", "#27ae60", 1.5, "dash"),
+        (prestamo_neto_endeudamiento_neto,"prestamo_neto_endeudamiento_neto", "#8e44ad", 1.5, "dot"),
+    ],
+    titulo="Fondos Soberanos: Total, FEES y FRP (millones de USD)",
+    ytitle="Millones de USD",
+).show()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ---
 
