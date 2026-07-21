@@ -246,36 +246,34 @@ prestamo_neto_endeudamiento_neto = obtener_serie("F051.BT04.FLU.M.D.CLP.T")
 ## 1. Gobierno municipal
 
 ```{python}
-
 import plotly.express as px
 
-fig = px.area(
-    total_ingresos,
-    x="fecha",
-    y="valor",
+fig_ingresos = px.area(
+    total_ingresos, x="fecha", y="valor",
     title="Total Ingresos del Gobierno Municipal (trimestral)",
 )
-
-fig = px.area(
-    total_gastos,
-    x="fecha",
-    y="valor",
-    title="Total Ingresos del Gobierno Municipal (trimestral)",
+fig_ingresos.update_layout(
+    xaxis_title="Trimestre", yaxis_title="Millones de CLP", template="plotly_white",
 )
+fig_ingresos.show()
 
-fig = px.area(
-    prestamo_neto_endeudamiento_neto,
-    x="fecha",
-    y="valor",
-    title="Total Ingresos del Gobierno Municipal (trimestral)",
+fig_gastos = px.area(
+    total_gastos, x="fecha", y="valor",
+    title="Total Gastos del Gobierno Municipal (trimestral)",
 )
+fig_gastos.update_layout(
+    xaxis_title="Trimestre", yaxis_title="Millones de CLP", template="plotly_white",
+)
+fig_gastos.show()
 
-fig.update_layout(
-    xaxis_title="Trimestre",
-    yaxis_title="Millones de CLP",
-    template="plotly_white",
+fig_prestamo = px.area(
+    prestamo_neto_endeudamiento_neto, x="fecha", y="valor",
+    title="Préstamo neto/Endeudamiento neto (trimestral)",
 )
-fig.show()
+fig_prestamo.update_layout(
+    xaxis_title="Trimestre", yaxis_title="Millones de CLP", template="plotly_white",
+)
+fig_prestamo.show()
 
 ```
 
