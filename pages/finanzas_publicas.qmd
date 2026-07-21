@@ -241,6 +241,105 @@ prestamo_neto_endeudamiento_neto = obtener_serie("F051.BT04.FLU.M.D.CLP.T")
 
 
 ```
+```{python}
+import plotly.graph_objects as go
+
+componentes_gastos = [
+    (personal, "Personal", "#2980b9"),
+    (bienes_y_servicios_de_consumo_y_produccion, "Bienes y servicios de consumo y producción", "#e67e22"),
+    (intereses, "Intereses", "#27ae60"),
+    (subsidios_y_donaciones, "Subsidios y donaciones", "#9b59b6"),
+    (prestaciones_previsionales, "Prestaciones previsionales", "#c0392b"),
+    (otros, "Otros", "#7f8c8d"),
+]
+
+fig_gastos = go.Figure()
+
+for df_, nombre, color in componentes_gastos:
+    fig_gastos.add_trace(go.Bar(
+        x=df_["fecha"], y=df_["valor"],
+        name=nombre,
+        marker_color=color,
+        hovertemplate=f"<b>{nombre}</b><br>%{{x|%b %Y}}: %{{y:,.0f}}<extra></extra>",
+    ))
+
+fig_gastos.add_trace(go.Scatter(
+    x=gastos["fecha"], y=gastos["valor"],
+    name="Gastos totales",
+    mode="lines+markers",
+    line=dict(color="black", width=2),
+    marker=dict(size=5, color="black"),
+    hovertemplate="<b>Gastos totales</b><br>%{x|%b %Y}: %{y:,.0f}<extra></extra>",
+))
+
+fig_gastos.update_layout(
+    barmode="stack",
+    title=dict(text="Composición de gastos del Gobierno (trimestral)", x=0.5, xanchor="center"),
+    xaxis=dict(title="", tickangle=45, showgrid=False),
+    yaxis=dict(title="Millones de CLP", tickformat=",.0f", gridcolor="rgba(0,0,0,0.08)"),
+    template="plotly_white",
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    hovermode="x unified",
+    height=600,
+    legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="center", x=0.5),
+    margin=dict(l=70, r=40, t=80, b=120),
+)
+
+fig_gastos.show()
+```
+
+```{python}
+componentes_activos = [
+    (inversion, "Inversión", "#2980b9"),
+    (transferencias_de_capital, "Transferencias de capital", "#e67e22"),
+    (consumo_capital_fijo, "Consumo Capital Fijo", "#27ae60"),
+]
+
+fig_activos = go.Figure()
+
+for df_, nombre, color in componentes_activos:
+    fig_activos.add_trace(go.Bar(
+        x=df_["fecha"], y=df_["valor"],
+        name=nombre,
+        marker_color=color,
+        hovertemplate=f"<b>{nombre}</b><br>%{{x|%b %Y}}: %{{y:,.0f}}<extra></extra>",
+    ))
+
+# Venta de activos físicos resta (suele venir con signo negativo o descontar del total)
+fig_activos.add_trace(go.Bar(
+    x=venta_de_activos_fisicos["fecha"], y=venta_de_activos_fisicos["valor"],
+    name="Venta de activos físicos",
+    marker_color="#c0392b",
+    hovertemplate="<b>Venta de activos físicos</b><br>%{x|%b %Y}: %{y:,.0f}<extra></extra>",
+))
+
+fig_activos.add_trace(go.Scatter(
+    x=adquisicion_neta_de_activos_no_financieros["fecha"],
+    y=adquisicion_neta_de_activos_no_financieros["valor"],
+    name="Adquisición neta total",
+    mode="lines+markers",
+    line=dict(color="black", width=2),
+    marker=dict(size=5, color="black"),
+    hovertemplate="<b>Adquisición neta total</b><br>%{x|%b %Y}: %{y:,.0f}<extra></extra>",
+))
+
+fig_activos.update_layout(
+    barmode="relative",  # permite que valores negativos (venta de activos) resten del apilado
+    title=dict(text="Composición de adquisición neta de activos no financieros (trimestral)", x=0.5, xanchor="center"),
+    xaxis=dict(title="", tickangle=45, showgrid=False),
+    yaxis=dict(title="Millones de CLP", tickformat=",.0f", gridcolor="rgba(0,0,0,0.08)"),
+    template="plotly_white",
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    hovermode="x unified",
+    height=600,
+    legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="center", x=0.5),
+    margin=dict(l=70, r=40, t=80, b=120),
+)
+
+fig_activos.show()
+```
 
 
 ## 1. Gobierno municipal
@@ -257,6 +356,7 @@ series_a_graficar = [
 fig = make_subplots(
     rows=2, cols=2,
     subplot_titles=[nombre for _, nombre, _ in series_a_graficar],
+    vertical_spacing=0.18,  # más espacio entre fila 1 y fila 2
 )
 
 posiciones = [(1, 1), (1, 2), (2, 1)]
@@ -268,27 +368,83 @@ for (df_, nombre, color), (row, col) in zip(series_a_graficar, posiciones):
             mode="lines", name=nombre,
             line=dict(color=color, width=2),
             fill="tozeroy",
+            fillcolor=color.replace(")", ",0.15)").replace("rgb", "rgba") if "rgb" in color else None,
         ),
         row=row, col=col,
     )
 
 fig.update_layout(
-    title="Operaciones no financieras del Gobierno (trimestral)",
+    title=dict(text="Operaciones no financieras del Gobierno (trimestral)", y=0.98, yanchor="top"),
     template="plotly_white",
-    height=700,
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    height=750,
+    margin=dict(t=110, b=60),  # más espacio arriba para separar título general de subtítulos
     showlegend=False,
 )
+
+# Bajar un poco los subtítulos de fila 1 y subir el de fila 2
+fig.layout.annotations[0].update(y=1.0)   # "Total ingresos"
+fig.layout.annotations[1].update(y=1.0)   # "Total gastos"
+fig.layout.annotations[2].update(y=0.42)  # "Préstamo neto..." (sube un poco, acercándolo a su gráfico)
+
 fig.show()
 ```
 
 
+```{python}
+import plotly.graph_objects as go
+
+componentes = [
+    (ingresos_tributarios_netos, "Ingresos tributarios netos", "#2980b9"),
+    (cobre_bruto, "Cobre bruto", "#e67e22"),
+    (imposiciones_previsionales, "Imposiciones previsionales", "#27ae60"),
+    (donaciones, "Donaciones", "#9b59b6"),
+    (rentas_de_la_propiedad, "Rentas de la propiedad", "#c0392b"),
+    (ingresos_de_operacion, "Ingresos de operación", "#16a085"),
+    (otros_ingresos, "Otros ingresos", "#7f8c8d"),
+]
+
+fig = go.Figure()
+
+for df_, nombre, color in componentes:
+    fig.add_trace(go.Bar(
+        x=df_["fecha"], y=df_["valor"],
+        name=nombre,
+        marker_color=color,
+        hovertemplate=f"<b>{nombre}</b><br>%{{x|%b %Y}}: %{{y:,.0f}}<extra></extra>",
+    ))
+
+fig.add_trace(go.Scatter(
+    x=ingresos["fecha"], y=ingresos["valor"],
+    name="Ingresos totales",
+    mode="lines+markers",
+    line=dict(color="black", width=2),
+    marker=dict(size=5, color="black"),
+    hovertemplate="<b>Ingresos totales</b><br>%{x|%b %Y}: %{y:,.0f}<extra></extra>",
+))
+
+fig.update_layout(
+    barmode="stack",
+    title=dict(text="Composición de ingresos del Gobierno (trimestral)", x=0.5, xanchor="center"),
+    xaxis=dict(title="", tickangle=45, showgrid=False),
+    yaxis=dict(title="Millones de CLP", tickformat=",.0f", gridcolor="rgba(0,0,0,0.08)"),
+    template="plotly_white",
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    hovermode="x unified",
+    height=600,
+    legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="center", x=0.5),
+    margin=dict(l=70, r=40, t=80, b=120),
+)
+
+fig.show()
+```
 
 
+```{python}
 
-
-
-
-
+```
 ---
 
 ## 1. Gobierno Central
