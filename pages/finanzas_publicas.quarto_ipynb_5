@@ -10,7 +10,7 @@
         "date: last-modified\n",
         "---"
       ],
-      "id": "b993f696"
+      "id": "1edb18cb"
     },
     {
       "cell_type": "code",
@@ -210,45 +210,80 @@
         "    return fig\n",
         "\n",
         "# Cargar series fondos soberanos\n",
-        "fondossoberanos      = obtener_serie(\"F051.C19.STO.C.Z.USD.M\")\n",
-        "fees                 = obtener_serie(\"F051.C17.STO.C.Z.USD.M\")\n",
-        "frp                  = obtener_serie(\"F051.C15.STO.C.Z.USD.M\")\n",
-        "oatp                 = obtener_serie(\"F051.M2.STO.C.Z.USD.M\")\n",
-        "pesos                = obtener_serie(\"F051.M21.STO.C.Z.USD.M\")\n",
-        "dolar                = obtener_serie(\"F051.M22.STO.C.Z.USD.M\")\n",
-        "fondoeduc            = obtener_serie(\"F051.C181.STO.C.Z.USD.M\")\n",
-        "fapr                 = obtener_serie(\"F051.M11.STO.C.Z.USD.M\")\n",
-        "tratamientoaltocosto = obtener_serie(\"F051.M12.STO.C.Z.USD.M\")\n",
+        "from concurrent.futures import ThreadPoolExecutor\n",
         "\n",
-        "# Cargar series municipales operaciones NO financieras\n",
-        "ingresos = obtener_serie(\"F051.AT01.FLU.M.D.CLP.T\")\n",
-        "ingresos_tributarios_netos = obtener_serie(\"F051.AT011.FLU.M.D.CLP.T\")\n",
-        "cobre_bruto = obtener_serie(\"F051.AT012.FLU.M.D.CLP.T\")\n",
-        "imposiciones_previsionales = obtener_serie(\"F051.AT013.FLU.M.D.CLP.T\")\n",
-        "donaciones = obtener_serie(\"F051.AT014.FLU.M.D.CLP.T\")\n",
-        "rentas_de_la_propiedad = obtener_serie(\"F051.AT015.FLU.M.D.CLP.T\")\n",
-        "ingresos_de_operacion = obtener_serie(\"F051.AT016.FLU.M.D.CLP.T\")\n",
-        "otros_ingresos = obtener_serie(\"F051.AT017.FLU.M.D.CLP.T\")\n",
+        "codigos_series = {\n",
+        "    \"fondossoberanos\": \"F051.C19.STO.C.Z.USD.M\",\n",
+        "    \"fees\": \"F051.C17.STO.C.Z.USD.M\",\n",
+        "    \"frp\": \"F051.C15.STO.C.Z.USD.M\",\n",
+        "    \"oatp\": \"F051.M2.STO.C.Z.USD.M\",\n",
+        "    \"pesos\": \"F051.M21.STO.C.Z.USD.M\",\n",
+        "    \"dolar\": \"F051.M22.STO.C.Z.USD.M\",\n",
+        "    \"fondoeduc\": \"F051.C181.STO.C.Z.USD.M\",\n",
+        "    \"fapr\": \"F051.M11.STO.C.Z.USD.M\",\n",
+        "    \"tratamientoaltocosto\": \"F051.M12.STO.C.Z.USD.M\",\n",
+        "    \"ingresos\": \"F051.AT01.FLU.M.D.CLP.T\",\n",
+        "    \"ingresos_tributarios_netos\": \"F051.AT011.FLU.M.D.CLP.T\",\n",
+        "    \"cobre_bruto\": \"F051.AT012.FLU.M.D.CLP.T\",\n",
+        "    \"imposiciones_previsionales\": \"F051.AT013.FLU.M.D.CLP.T\",\n",
+        "    \"donaciones\": \"F051.AT014.FLU.M.D.CLP.T\",\n",
+        "    \"rentas_de_la_propiedad\": \"F051.AT015.FLU.M.D.CLP.T\",\n",
+        "    \"ingresos_de_operacion\": \"F051.AT016.FLU.M.D.CLP.T\",\n",
+        "    \"otros_ingresos\": \"F051.AT017.FLU.M.D.CLP.T\",\n",
+        "    \"gastos\": \"F051.AT02.FLU.M.D.CLP.T\",\n",
+        "    \"personal\": \"F051.AT021.FLU.M.D.CLP.T\",\n",
+        "    \"bienes_y_servicios_de_consumo_y_produccion\": \"F051.AT022.FLU.M.D.CLP.T\",\n",
+        "    \"intereses\": \"F051.AT023.FLU.M.D.CLP.T\",\n",
+        "    \"subsidios_y_donaciones\": \"F051.AT024.FLU.M.D.CLP.T\",\n",
+        "    \"prestaciones_previsionales\": \"F051.AT025.FLU.M.D.CLP.T\",\n",
+        "    \"otros\": \"F051.AT026.FLU.M.D.CLP.T\",\n",
+        "    \"resultado_operativo_bruto\": \"F051.AT03.FLU.M.D.CLP.T\",\n",
+        "    \"adquisicion_neta_de_activos_no_financieros\": \"F051.BT01.FLU.M.D.CLP.T\",\n",
+        "    \"venta_de_activos_fisicos\": \"F051.BT011.FLU.M.D.CLP.T\",\n",
+        "    \"inversion\": \"F051.BT012.FLU.M.D.CLP.T\",\n",
+        "    \"transferencias_de_capital\": \"F051.BT013.FLU.M.D.CLP.T\",\n",
+        "    \"consumo_capital_fijo\": \"F051.BT014.FLU.M.D.CLP.T\",\n",
+        "    \"total_ingresos\": \"F051.BT02.FLU.M.D.CLP.T\",\n",
+        "    \"total_gastos\": \"F051.BT03.FLU.M.D.CLP.T\",\n",
+        "    \"prestamo_neto_endeudamiento_neto\": \"F051.BT04.FLU.M.D.CLP.T\",\n",
+        "}\n",
         "\n",
-        "gastos = obtener_serie(\"F051.AT02.FLU.M.D.CLP.T\")\n",
-        "personal = obtener_serie(\"F051.AT021.FLU.M.D.CLP.T\")\n",
-        "bienes_y_servicios_de_consumo_y_produccion = obtener_serie(\"F051.AT022.FLU.M.D.CLP.T\")\n",
-        "intereses = obtener_serie(\"F051.AT023.FLU.M.D.CLP.T\")\n",
-        "subsidios_y_donaciones = obtener_serie(\"F051.AT024.FLU.M.D.CLP.T\")\n",
-        "prestaciones_previsionales = obtener_serie(\"F051.AT025.FLU.M.D.CLP.T\")\n",
-        "otros = obtener_serie(\"F051.AT026.FLU.M.D.CLP.T\")\n",
+        "with ThreadPoolExecutor(max_workers=10) as executor:\n",
+        "    resultados = dict(zip(codigos_series.keys(), executor.map(obtener_serie, codigos_series.values())))\n",
         "\n",
-        "resultado_operativo_bruto = obtener_serie(\"F051.AT03.FLU.M.D.CLP.T\")\n",
-        "\n",
-        "adquisicion_neta_de_activos_no_financieros = obtener_serie(\"F051.BT01.FLU.M.D.CLP.T\")\n",
-        "venta_de_activos_fisicos = obtener_serie(\"F051.BT011.FLU.M.D.CLP.T\")\n",
-        "inversion = obtener_serie(\"F051.BT012.FLU.M.D.CLP.T\")\n",
-        "transferencias_de_capital = obtener_serie(\"F051.BT013.FLU.M.D.CLP.T\")\n",
-        "consumo_capital_fijo = obtener_serie(\"F051.BT014.FLU.M.D.CLP.T\")\n",
-        "\n",
-        "total_ingresos = obtener_serie(\"F051.BT02.FLU.M.D.CLP.T\")\n",
-        "total_gastos = obtener_serie(\"F051.BT03.FLU.M.D.CLP.T\")\n",
-        "prestamo_neto_endeudamiento_neto = obtener_serie(\"F051.BT04.FLU.M.D.CLP.T\")\n"
+        "fondossoberanos = resultados[\"fondossoberanos\"]\n",
+        "fees = resultados[\"fees\"]\n",
+        "frp = resultados[\"frp\"]\n",
+        "oatp = resultados[\"oatp\"]\n",
+        "pesos = resultados[\"pesos\"]\n",
+        "dolar = resultados[\"dolar\"]\n",
+        "fondoeduc = resultados[\"fondoeduc\"]\n",
+        "fapr = resultados[\"fapr\"]\n",
+        "tratamientoaltocosto = resultados[\"tratamientoaltocosto\"]\n",
+        "ingresos = resultados[\"ingresos\"]\n",
+        "ingresos_tributarios_netos = resultados[\"ingresos_tributarios_netos\"]\n",
+        "cobre_bruto = resultados[\"cobre_bruto\"]\n",
+        "imposiciones_previsionales = resultados[\"imposiciones_previsionales\"]\n",
+        "donaciones = resultados[\"donaciones\"]\n",
+        "rentas_de_la_propiedad = resultados[\"rentas_de_la_propiedad\"]\n",
+        "ingresos_de_operacion = resultados[\"ingresos_de_operacion\"]\n",
+        "otros_ingresos = resultados[\"otros_ingresos\"]\n",
+        "gastos = resultados[\"gastos\"]\n",
+        "personal = resultados[\"personal\"]\n",
+        "bienes_y_servicios_de_consumo_y_produccion = resultados[\"bienes_y_servicios_de_consumo_y_produccion\"]\n",
+        "intereses = resultados[\"intereses\"]\n",
+        "subsidios_y_donaciones = resultados[\"subsidios_y_donaciones\"]\n",
+        "prestaciones_previsionales = resultados[\"prestaciones_previsionales\"]\n",
+        "otros = resultados[\"otros\"]\n",
+        "resultado_operativo_bruto = resultados[\"resultado_operativo_bruto\"]\n",
+        "adquisicion_neta_de_activos_no_financieros = resultados[\"adquisicion_neta_de_activos_no_financieros\"]\n",
+        "venta_de_activos_fisicos = resultados[\"venta_de_activos_fisicos\"]\n",
+        "inversion = resultados[\"inversion\"]\n",
+        "transferencias_de_capital = resultados[\"transferencias_de_capital\"]\n",
+        "consumo_capital_fijo = resultados[\"consumo_capital_fijo\"]\n",
+        "total_ingresos = resultados[\"total_ingresos\"]\n",
+        "total_gastos = resultados[\"total_gastos\"]\n",
+        "prestamo_neto_endeudamiento_neto = resultados[\"prestamo_neto_endeudamiento_neto\"]\n"
       ],
       "id": "setup",
       "execution_count": null,
@@ -311,7 +346,7 @@
         "\n",
         "fig_gastos.show()"
       ],
-      "id": "5deffb19",
+      "id": "497a87dd",
       "execution_count": null,
       "outputs": []
     },
@@ -369,7 +404,7 @@
         "\n",
         "fig_activos.show()"
       ],
-      "id": "7d61b03e",
+      "id": "67154541",
       "execution_count": null,
       "outputs": []
     },
@@ -379,7 +414,7 @@
       "source": [
         "## 1. Gobierno municipal"
       ],
-      "id": "e0b13bd8"
+      "id": "6cdf5480"
     },
     {
       "cell_type": "code",
@@ -431,7 +466,7 @@
         "\n",
         "fig.show()"
       ],
-      "id": "510e3230",
+      "id": "da39d26a",
       "execution_count": null,
       "outputs": []
     },
@@ -486,7 +521,7 @@
         "\n",
         "fig.show()"
       ],
-      "id": "28287a0d",
+      "id": "1beb9b39",
       "execution_count": null,
       "outputs": []
     },
@@ -546,7 +581,7 @@
         "\n",
         "fig_activos.show()"
       ],
-      "id": "947d6a41",
+      "id": "1b890e5f",
       "execution_count": null,
       "outputs": []
     },
@@ -560,7 +595,7 @@
         "\n",
         "La deuda del Gobierno Central agrupa las obligaciones financieras contraídas directamente por el fisco (bonos soberanos, créditos, etc.). La **deuda bruta** corresponde al total de pasivos sin descontar activos financieros; la **deuda neta** resta los activos líquidos que el Estado mantiene (como el Fondo de Estabilización Económica y Social), por lo que suele ser más baja y refleja mejor la posición financiera real del fisco."
       ],
-      "id": "403fe3b3"
+      "id": "3b0b66d3"
     },
     {
       "cell_type": "code",
@@ -568,7 +603,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_gc\", \"deuda_neta_gc\", \"Gobierno Central\").show()"
       ],
-      "id": "d54d0902",
+      "id": "a2d0f31a",
       "execution_count": null,
       "outputs": []
     },
@@ -580,7 +615,7 @@
         "\n",
         "Corresponde a los pasivos financieros del Banco Central de Chile, originados principalmente por instrumentos de política monetaria (como los PDBC y PRBC) y las obligaciones asumidas durante la capitalización del organismo en los años 80-90. A diferencia del Gobierno Central, esta deuda no depende del gasto fiscal, sino de decisiones de política monetaria."
       ],
-      "id": "8b3146f4"
+      "id": "89fe67aa"
     },
     {
       "cell_type": "code",
@@ -588,7 +623,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_bc\", \"deuda_neta_bc\", \"Banco Central\").show()"
       ],
-      "id": "a3d035e9",
+      "id": "d4e4c23b",
       "execution_count": null,
       "outputs": []
     },
@@ -600,7 +635,7 @@
         "\n",
         "Suma la deuda del Gobierno Central, el Banco Central y las empresas públicas, evitando el doble conteo de obligaciones cruzadas entre estas entidades. Es la medida más completa para dimensionar el endeudamiento total del Estado chileno frente al mercado y organismos internacionales."
       ],
-      "id": "0197b73e"
+      "id": "e3c4bdfa"
     },
     {
       "cell_type": "code",
@@ -608,7 +643,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_sp\", \"deuda_neta_sp\", \"Sector Público Consolidado\").show()"
       ],
-      "id": "1b43c157",
+      "id": "ed5c2051",
       "execution_count": null,
       "outputs": []
     },
@@ -620,7 +655,7 @@
         "\n",
         "Incluye la deuda de empresas estatales como Codelco, ENAP, Metro y otras sociedades del Estado. A diferencia del Gobierno Central, esta deuda suele estar asociada a financiamiento de proyectos de inversión productiva (minería, energía, infraestructura) más que a gasto corriente."
       ],
-      "id": "f391c2de"
+      "id": "73276a1c"
     },
     {
       "cell_type": "code",
@@ -628,7 +663,7 @@
       "source": [
         "grafico_deuda(df, \"deuda_bruta_ep\", \"deuda_neta_ep\", \"Empresas Públicas\").show()"
       ],
-      "id": "9ffee07c",
+      "id": "e983e0e6",
       "execution_count": null,
       "outputs": []
     },
@@ -646,7 +681,7 @@
         "\n",
         "El **FEES** (Fondo de Estabilización Económica y Social) financia el déficit fiscal en años de bajo crecimiento o bajo precio del cobre; el **FRP** (Fondo de Reserva de Pensiones) respalda obligaciones previsionales del Estado (pensiones básicas solidarias). El total consolidado es la suma de ambos."
       ],
-      "id": "4345c855"
+      "id": "dc23d2bd"
     },
     {
       "cell_type": "code",
@@ -662,7 +697,7 @@
         "    ytitle=\"Millones de USD\",\n",
         ").show()"
       ],
-      "id": "77bd144f",
+      "id": "5ed7a801",
       "execution_count": null,
       "outputs": []
     },
@@ -674,7 +709,7 @@
         "\n",
         "Son recursos de caja del Tesoro Público no clasificados como fondos soberanos, mantenidos tanto en pesos chilenos como en dólares. Reflejan la liquidez disponible del fisco para necesidades de financiamiento de corto plazo, independiente de los fondos de ahorro de largo plazo."
       ],
-      "id": "df2523a7"
+      "id": "da423488"
     },
     {
       "cell_type": "code",
@@ -690,7 +725,7 @@
         "    ytitle=\"Millones de USD\",\n",
         ").show()"
       ],
-      "id": "177d6239",
+      "id": "93755790",
       "execution_count": null,
       "outputs": []
     },
@@ -702,7 +737,7 @@
         "\n",
         "Este fondo respalda el financiamiento de becas y créditos estudiantiles del Estado, sirviendo como reserva específica para asegurar la continuidad de los beneficios educacionales independiente del ciclo fiscal."
       ],
-      "id": "ce10aea3"
+      "id": "f3b6f6ec"
     },
     {
       "cell_type": "code",
@@ -711,7 +746,7 @@
         "grafico_linea(fondoeduc, \"Fondos para la Educación (FpE)\",\n",
         "              \"Millones de USD\", color=\"rgb(243,156,18)\").show()"
       ],
-      "id": "1e6f48e8",
+      "id": "904c7a75",
       "execution_count": null,
       "outputs": []
     },
@@ -723,7 +758,7 @@
         "\n",
         "Financia proyectos de inversión e infraestructura en regiones, con el objetivo de complementar el gasto de los gobiernos regionales y reducir brechas de desarrollo territorial."
       ],
-      "id": "ccabef86"
+      "id": "73e2ae19"
     },
     {
       "cell_type": "code",
@@ -732,7 +767,7 @@
         "grafico_linea(fapr, \"Fondo de Apoyo a las Regiones (FAPR)\",\n",
         "              \"Millones de USD\", color=\"rgb(22,160,133)\").show()"
       ],
-      "id": "95fde656",
+      "id": "df4832de",
       "execution_count": null,
       "outputs": []
     },
@@ -744,7 +779,7 @@
         "\n",
         "Respalda el financiamiento de tratamientos médicos de alto costo no cubiertos completamente por el sistema de salud regular (Ley Ricarte Soto), garantizando acceso a terapias de alto valor para enfermedades de baja frecuencia pero alto impacto financiero para las familias."
       ],
-      "id": "e2713af2"
+      "id": "15678129"
     },
     {
       "cell_type": "code",
@@ -754,7 +789,7 @@
         "              \"Fondo para Diagnósticos y Tratamientos de Alto Costo\",\n",
         "              \"Millones de USD\", color=\"rgb(231,76,60)\").show()"
       ],
-      "id": "2ce515bf",
+      "id": "a471bb10",
       "execution_count": null,
       "outputs": []
     }

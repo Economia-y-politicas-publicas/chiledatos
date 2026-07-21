@@ -199,45 +199,80 @@ def grafico_multi(trazas, titulo, ytitle):
     return fig
 
 # Cargar series fondos soberanos
-fondossoberanos      = obtener_serie("F051.C19.STO.C.Z.USD.M")
-fees                 = obtener_serie("F051.C17.STO.C.Z.USD.M")
-frp                  = obtener_serie("F051.C15.STO.C.Z.USD.M")
-oatp                 = obtener_serie("F051.M2.STO.C.Z.USD.M")
-pesos                = obtener_serie("F051.M21.STO.C.Z.USD.M")
-dolar                = obtener_serie("F051.M22.STO.C.Z.USD.M")
-fondoeduc            = obtener_serie("F051.C181.STO.C.Z.USD.M")
-fapr                 = obtener_serie("F051.M11.STO.C.Z.USD.M")
-tratamientoaltocosto = obtener_serie("F051.M12.STO.C.Z.USD.M")
+from concurrent.futures import ThreadPoolExecutor
 
-# Cargar series municipales operaciones NO financieras
-ingresos = obtener_serie("F051.AT01.FLU.M.D.CLP.T")
-ingresos_tributarios_netos = obtener_serie("F051.AT011.FLU.M.D.CLP.T")
-cobre_bruto = obtener_serie("F051.AT012.FLU.M.D.CLP.T")
-imposiciones_previsionales = obtener_serie("F051.AT013.FLU.M.D.CLP.T")
-donaciones = obtener_serie("F051.AT014.FLU.M.D.CLP.T")
-rentas_de_la_propiedad = obtener_serie("F051.AT015.FLU.M.D.CLP.T")
-ingresos_de_operacion = obtener_serie("F051.AT016.FLU.M.D.CLP.T")
-otros_ingresos = obtener_serie("F051.AT017.FLU.M.D.CLP.T")
+codigos_series = {
+    "fondossoberanos": "F051.C19.STO.C.Z.USD.M",
+    "fees": "F051.C17.STO.C.Z.USD.M",
+    "frp": "F051.C15.STO.C.Z.USD.M",
+    "oatp": "F051.M2.STO.C.Z.USD.M",
+    "pesos": "F051.M21.STO.C.Z.USD.M",
+    "dolar": "F051.M22.STO.C.Z.USD.M",
+    "fondoeduc": "F051.C181.STO.C.Z.USD.M",
+    "fapr": "F051.M11.STO.C.Z.USD.M",
+    "tratamientoaltocosto": "F051.M12.STO.C.Z.USD.M",
+    "ingresos": "F051.AT01.FLU.M.D.CLP.T",
+    "ingresos_tributarios_netos": "F051.AT011.FLU.M.D.CLP.T",
+    "cobre_bruto": "F051.AT012.FLU.M.D.CLP.T",
+    "imposiciones_previsionales": "F051.AT013.FLU.M.D.CLP.T",
+    "donaciones": "F051.AT014.FLU.M.D.CLP.T",
+    "rentas_de_la_propiedad": "F051.AT015.FLU.M.D.CLP.T",
+    "ingresos_de_operacion": "F051.AT016.FLU.M.D.CLP.T",
+    "otros_ingresos": "F051.AT017.FLU.M.D.CLP.T",
+    "gastos": "F051.AT02.FLU.M.D.CLP.T",
+    "personal": "F051.AT021.FLU.M.D.CLP.T",
+    "bienes_y_servicios_de_consumo_y_produccion": "F051.AT022.FLU.M.D.CLP.T",
+    "intereses": "F051.AT023.FLU.M.D.CLP.T",
+    "subsidios_y_donaciones": "F051.AT024.FLU.M.D.CLP.T",
+    "prestaciones_previsionales": "F051.AT025.FLU.M.D.CLP.T",
+    "otros": "F051.AT026.FLU.M.D.CLP.T",
+    "resultado_operativo_bruto": "F051.AT03.FLU.M.D.CLP.T",
+    "adquisicion_neta_de_activos_no_financieros": "F051.BT01.FLU.M.D.CLP.T",
+    "venta_de_activos_fisicos": "F051.BT011.FLU.M.D.CLP.T",
+    "inversion": "F051.BT012.FLU.M.D.CLP.T",
+    "transferencias_de_capital": "F051.BT013.FLU.M.D.CLP.T",
+    "consumo_capital_fijo": "F051.BT014.FLU.M.D.CLP.T",
+    "total_ingresos": "F051.BT02.FLU.M.D.CLP.T",
+    "total_gastos": "F051.BT03.FLU.M.D.CLP.T",
+    "prestamo_neto_endeudamiento_neto": "F051.BT04.FLU.M.D.CLP.T",
+}
 
-gastos = obtener_serie("F051.AT02.FLU.M.D.CLP.T")
-personal = obtener_serie("F051.AT021.FLU.M.D.CLP.T")
-bienes_y_servicios_de_consumo_y_produccion = obtener_serie("F051.AT022.FLU.M.D.CLP.T")
-intereses = obtener_serie("F051.AT023.FLU.M.D.CLP.T")
-subsidios_y_donaciones = obtener_serie("F051.AT024.FLU.M.D.CLP.T")
-prestaciones_previsionales = obtener_serie("F051.AT025.FLU.M.D.CLP.T")
-otros = obtener_serie("F051.AT026.FLU.M.D.CLP.T")
+with ThreadPoolExecutor(max_workers=10) as executor:
+    resultados = dict(zip(codigos_series.keys(), executor.map(obtener_serie, codigos_series.values())))
 
-resultado_operativo_bruto = obtener_serie("F051.AT03.FLU.M.D.CLP.T")
-
-adquisicion_neta_de_activos_no_financieros = obtener_serie("F051.BT01.FLU.M.D.CLP.T")
-venta_de_activos_fisicos = obtener_serie("F051.BT011.FLU.M.D.CLP.T")
-inversion = obtener_serie("F051.BT012.FLU.M.D.CLP.T")
-transferencias_de_capital = obtener_serie("F051.BT013.FLU.M.D.CLP.T")
-consumo_capital_fijo = obtener_serie("F051.BT014.FLU.M.D.CLP.T")
-
-total_ingresos = obtener_serie("F051.BT02.FLU.M.D.CLP.T")
-total_gastos = obtener_serie("F051.BT03.FLU.M.D.CLP.T")
-prestamo_neto_endeudamiento_neto = obtener_serie("F051.BT04.FLU.M.D.CLP.T")
+fondossoberanos = resultados["fondossoberanos"]
+fees = resultados["fees"]
+frp = resultados["frp"]
+oatp = resultados["oatp"]
+pesos = resultados["pesos"]
+dolar = resultados["dolar"]
+fondoeduc = resultados["fondoeduc"]
+fapr = resultados["fapr"]
+tratamientoaltocosto = resultados["tratamientoaltocosto"]
+ingresos = resultados["ingresos"]
+ingresos_tributarios_netos = resultados["ingresos_tributarios_netos"]
+cobre_bruto = resultados["cobre_bruto"]
+imposiciones_previsionales = resultados["imposiciones_previsionales"]
+donaciones = resultados["donaciones"]
+rentas_de_la_propiedad = resultados["rentas_de_la_propiedad"]
+ingresos_de_operacion = resultados["ingresos_de_operacion"]
+otros_ingresos = resultados["otros_ingresos"]
+gastos = resultados["gastos"]
+personal = resultados["personal"]
+bienes_y_servicios_de_consumo_y_produccion = resultados["bienes_y_servicios_de_consumo_y_produccion"]
+intereses = resultados["intereses"]
+subsidios_y_donaciones = resultados["subsidios_y_donaciones"]
+prestaciones_previsionales = resultados["prestaciones_previsionales"]
+otros = resultados["otros"]
+resultado_operativo_bruto = resultados["resultado_operativo_bruto"]
+adquisicion_neta_de_activos_no_financieros = resultados["adquisicion_neta_de_activos_no_financieros"]
+venta_de_activos_fisicos = resultados["venta_de_activos_fisicos"]
+inversion = resultados["inversion"]
+transferencias_de_capital = resultados["transferencias_de_capital"]
+consumo_capital_fijo = resultados["consumo_capital_fijo"]
+total_ingresos = resultados["total_ingresos"]
+total_gastos = resultados["total_gastos"]
+prestamo_neto_endeudamiento_neto = resultados["prestamo_neto_endeudamiento_neto"]
 
 
 ```
