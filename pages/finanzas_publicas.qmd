@@ -289,47 +289,6 @@ fig.show()
 
 
 
-
-
-
-
-
-
-```{python}
-# Script separado: actualizar_datos.py (corre por GitHub Actions en un cron, ej. semanal)
-import pandas as pd
-
-series = {
-    "total_ingresos": "F051.AT01.FLU.M.D.CLP.T",
-    "total_gastos": "F051.AT02.FLU.M.D.CLP.T",
-    "ingresos_tributarios_netos": "F051.AT011.FLU.M.D.CLP.T"
-}
-
-dfs = []
-for nombre, codigo in series.items():
-    df_ = obtener_serie(codigo)
-    df_ = df_[["fecha", "valor"]].rename(columns={"valor": nombre})
-    dfs.append(df_.set_index("fecha"))
-
-df_ancho = pd.concat(dfs, axis=1).reset_index()
-df_ancho.to_csv("data/operaciones_gobierno.csv", index=False)
-
-df = pd.read_csv(
-    "https://raw.githubusercontent.com/Economia-y-politicas-publicas/chiledatos/main/data/operaciones_gobierno.csv",
-    parse_dates=["fecha"],
-)
-total_ingresos = df[["fecha", "total_ingresos"]].rename(columns={"total_ingresos": "valor"})
-```
-
-
-
-
-
-
-
-
-
-
 ---
 
 ## 1. Gobierno Central
