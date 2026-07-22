@@ -101,8 +101,9 @@ def grafico_linea(df_, titulo, ytitle, color, formato_y=",.0f", prefijo="", sufi
     _agregar_autor(fig)
     return fig
 
-def grafico_multi(trazas, titulo, ytitle):
-    """trazas = lista de (df, nombre, color, ancho, dash). Etiquetas al final reemplazan la leyenda."""
+def grafico_multi(trazas, titulo, ytitle, formato_y=",.0f", sufijo=""):
+    """trazas = lista de (df, nombre, color, ancho, dash). Etiquetas al final reemplazan la leyenda.
+    Pensado para 2-4 series (si son más, usar grafico_multi_leyenda)."""
     fig = go.Figure()
     for df_, nombre, color, ancho, dash in trazas:
         if df_.empty:
@@ -112,7 +113,7 @@ def grafico_multi(trazas, titulo, ytitle):
             name=nombre,
             mode="lines",
             line=dict(color=color, width=ancho, dash=dash),
-            hovertemplate=f"<b>{nombre}</b><br>%{{x|%b %Y}}<br>%{{y:,.2f}}<extra></extra>",
+            hovertemplate=f"<b>{nombre}</b><br>%{{x|%b %Y}}<br>%{{y:{formato_y}}}{sufijo}<extra></extra>",
         ))
         fig.add_annotation(
             x=df_["fecha"].iloc[-1], y=df_["valor"].iloc[-1],
@@ -120,7 +121,8 @@ def grafico_multi(trazas, titulo, ytitle):
         )
     fig.update_layout(
         title=dict(text=titulo, x=0.5, xanchor="center", font=dict(size=18)),
-        yaxis=dict(title=ytitle, tickformat=",.0f", gridcolor="rgba(0,0,0,0.08)", zeroline=False),
+        yaxis=dict(title=ytitle, tickformat=formato_y, ticksuffix=sufijo,
+                    gridcolor="rgba(0,0,0,0.08)", zeroline=False),
         xaxis=dict(**EJE_X, showgrid=False, rangeslider=dict(visible=True, thickness=0.025)),
         template="plotly_white",
         font_family="Inter",
@@ -128,6 +130,40 @@ def grafico_multi(trazas, titulo, ytitle):
         hovermode="x unified",
         height=560,
         margin=dict(l=70, r=90, t=90, b=110),
+    )
+    _agregar_autor(fig)
+    return fig
+
+def grafico_multi_leyenda(trazas, titulo, ytitle, formato_y=",.1f", sufijo=""):
+    """Igual que grafico_multi pero con leyenda estándar (abajo, envuelta) en vez de
+    etiquetas al final de línea. Pensado para 5+ series donde las etiquetas se encimarían."""
+    fig = go.Figure()
+    for df_, nombre, color in trazas:
+        if df_.empty:
+            continue
+        fig.add_trace(go.Scatter(
+            x=df_["fecha"], y=df_["valor"],
+            name=nombre,
+            mode="lines",
+            line=dict(color=color, width=2),
+            hovertemplate=f"<b>{nombre}</b><br>%{{x|%b %Y}}<br>%{{y:{formato_y}}}{sufijo}<extra></extra>",
+        ))
+    fig.update_layout(
+        title=dict(text=titulo, x=0.5, xanchor="center", font=dict(size=18)),
+        yaxis=dict(title=ytitle, tickformat=formato_y, ticksuffix=sufijo,
+                    gridcolor="rgba(0,0,0,0.08)", zeroline=False),
+        xaxis=dict(**EJE_X, showgrid=False, rangeslider=dict(visible=True, thickness=0.025)),
+        template="plotly_white",
+        font_family="Inter",
+        hovermode="x unified",
+        height=600,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom", y=-0.45,
+            xanchor="center", x=0.5,
+            font=dict(size=11),
+        ),
+        margin=dict(l=70, r=40, t=90, b=170),
     )
     _agregar_autor(fig)
     return fig
@@ -140,16 +176,33 @@ utm_mensual = obtener_serie("F073.UTR.PRE.Z.M")
 uf_fin_de_mes  = fin_de_mes(uf_diaria)
 ivp_fin_de_mes = fin_de_mes(ivp_diaria)
 
-# ── Grupo 2: IPC oficial INE, base 2023=100 (placeholder, agregar códigos) ──
-# ipc_general_oficial = obtener_serie("CÓDIGO_IPC_OFICIAL")
-# ipc_subyacente_oficial = obtener_serie("CÓDIGO_IPC_SUBYACENTE")
+# ── Grupo 2: IPC — Serie Empalmada General (dic 2009 a la fecha, base 2023=100) ──
+ipc_general_var    = obtener_serie("F074.IPC.VAR.Z.EP23.C.M")
+ipc_general_var12  = obtener_serie("F074.IPC.V12.Z.EP23.C.M")
+ipc_general_indice = obtener_serie("F074.IPC.IND.Z.EP23.C.M")
 
-# ── Grupo 3: IPC / IPC sin volátiles (empalmes BC, base 2023=100) ──────────
-# ipc_empalme = obtener_serie("CÓDIGO_IPC_EMPALME")
-# ipc_sin_volatiles_empalme = obtener_serie("CÓDIGO_SIN_VOLATILES")
-# ipc_volatiles_empalme = obtener_serie("CÓDIGO_VOLATILES")
+# ── Grupo 2: IPC por categoría — Analíticos Empalmados (base 2023=100) ──────
+# Diccionario centralizado: agregar/quitar una categoría es una sola línea.
+CATEGORIAS_IPC = {
+    "SAE":  {"nombre": "Sin alimentos y energía (SAE)", "color": "#c0392b"},
+    "T":    {"nombre": "Transables",                     "color": "#2980b9"},
+    "N":    {"nombre": "No transables",                  "color": "#27ae60"},
+    "FV":   {"nombre": "Frutas y verduras frescas",      "color": "#f39c12"},
+    "A":    {"nombre": "Alimentos",                       "color": "#e67e22"},
+    "S":    {"nombre": "Servicios",                       "color": "#8e44ad"},
+    "B":    {"nombre": "Bienes",                          "color": "#16a085"},
+    "E":    {"nombre": "Energía",                         "color": "#d35400"},
+    "VIV":  {"nombre": "Vivienda",                        "color": "#7f8c8d"},
+    "SVIV": {"nombre": "Servicios menos vivienda",        "color": "#34495e"},
+}
 
-# ── Grupo 4: IPP, base 2014=100 y base 2019=100 ─────────────────────────────
+ipc_categorias_indice = {}
+ipc_categorias_var = {}
+for sufijo, info in CATEGORIAS_IPC.items():
+    ipc_categorias_indice[sufijo] = obtener_serie(f"F074.IPC{sufijo}.IND.Z.EP23.Z.M")
+    ipc_categorias_var[sufijo]    = obtener_serie(f"F074.IPC{sufijo}.VAR.Z.EP23.Z.M")
+
+# ── Grupo 3: IPP, base 2014=100 y base 2019=100 (placeholder, agregar códigos) ──
 # ipp_2014 = obtener_serie("CÓDIGO_IPP_2014")
 # ipp_2019 = obtener_serie("CÓDIGO_IPP_2019")
 ```
@@ -193,44 +246,71 @@ grafico_linea(utm_mensual, "Unidad Tributaria Mensual (UTM)",
 
 ---
 
+## 2. Índice de Precios al Consumidor (IPC)
+
+El **IPC** mide la variación de precios de una canasta representativa de bienes y servicios consumidos por los hogares. El Banco Central publica series **empalmadas**: pegan las bases anteriores (2018, 2013, etc.) y las reexpresan en base 2023=100, permitiendo mostrar la serie histórica completa desde diciembre de 2009 sin el corte que produce cada cambio de base.
+
+::: {.callout-note icon=false title="Glosario de categorías"}
+- **IPC SAE:** IPC general excluyendo Alimentos y Energía.
+- **Transables / No transables:** productos susceptibles (o no) de comercializarse internacionalmente.
+- **Frutas y verduras frescas:** productos clasificados en esa categoría específica.
+- **Alimentos:** productos alimenticios y bebidas no alcohólicas (división 1 de la canasta).
+- **Servicios / Bienes:** separación entre productos de servicio y productos físicos.
+- **Energía:** bienes asociados a energía y combustibles.
+- **Vivienda / Servicios menos vivienda:** vivienda como categoría propia, y el resto de servicios excluyéndola.
+:::
+
+### 2.1 IPC General — Serie Empalmada (dic. 2009 a la fecha)
+
+```{python}
+grafico_linea(ipc_general_indice, "IPC General — Índice (Empalmado, base 2023=100)",
+              "Índice", color="rgb(192,57,43)", formato_y=",.1f").show()
+```
+
+```{python}
+grafico_multi(
+    trazas=[
+        (ipc_general_var,   "Variación mensual",   "#2980b9", 2, "solid"),
+        (ipc_general_var12, "Variación 12 meses",  "#c0392b", 2, "dash"),
+    ],
+    titulo="IPC General — Variación Mensual y a 12 Meses",
+    ytitle="Variación (%)",
+    formato_y=",.1f",
+    sufijo="%",
+).show()
+```
+
+### 2.2 IPC por categoría — Índice (Serie Empalmada)
+
+```{python}
+grafico_multi_leyenda(
+    trazas=[
+        (ipc_categorias_indice[suf], info["nombre"], info["color"])
+        for suf, info in CATEGORIAS_IPC.items()
+    ],
+    titulo="IPC por Categoría — Índice (Empalmado, base 2023=100)",
+    ytitle="Índice",
+).show()
+```
+
+### 2.3 IPC por categoría — Variación Mensual (Serie Empalmada)
+
+```{python}
+grafico_multi_leyenda(
+    trazas=[
+        (ipc_categorias_var[suf], info["nombre"], info["color"])
+        for suf, info in CATEGORIAS_IPC.items()
+    ],
+    titulo="IPC por Categoría — Variación Mensual (%)",
+    ytitle="Variación (%)",
+    sufijo="%",
+).show()
+```
+
+---
+
 <!--
-## 2. IPC General y medidas subyacentes (cifras oficiales del INE), base 2023=100
-
-Serie oficial vigente publicada por el INE, disponible desde el inicio de la base 2023=100. No requiere empalme; úsala si solo necesitas el período reciente.
-
-### 2.1 IPC general
-
-```{python}
-# grafico_linea(ipc_general_oficial, "IPC General (base 2023=100)", "Índice", color="rgb(231,76,60)").show()
-```
-
-### 2.2 IPC subyacente
-
-```{python}
-# grafico_linea(ipc_subyacente_oficial, "IPC Subyacente (base 2023=100)", "Índice", color="rgb(41,128,185)").show()
-```
-
----
-
-## 3. IPC, IPC sin volátiles e IPC volátiles (empalmes del Banco Central), base 2023=100
-
-Serie empalmada por el Banco Central: pega las bases anteriores (2018, 2013, etc.) y las reexpresa en base 2023=100, permitiendo mostrar la serie histórica completa. Úsala para gráficos de largo plazo.
-
-```{python}
-# grafico_multi(
-#     trazas=[
-#         (ipc_empalme,              "IPC general",      "#c0392b", 3,   "solid"),
-#         (ipc_sin_volatiles_empalme,"IPC sin volátiles", "#2980b9", 1.5, "dash"),
-#         (ipc_volatiles_empalme,   "IPC volátiles",      "#f39c12", 1.5, "dot"),
-#     ],
-#     titulo="IPC — Serie Empalmada (base 2023=100)",
-#     ytitle="Índice",
-# ).show()
-```
-
----
-
-## 4. Índice de Precios al Productor (IPP)
+## 3. Índice de Precios al Productor (IPP)
 
 El IPP no tiene una serie de empalme oficial del Banco Central: las bases 2014=100 y 2019=100 están desconectadas. Para una serie larga, hay que empalmarlas manualmente encadenando tasas de variación en el tramo de traslape.
 
