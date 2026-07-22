@@ -1,0 +1,247 @@
+---
+title: "Inflación"
+subtitle: "UF, IVP, UTM e Índice de Precios al Consumidor"
+date: last-modified
+---
+
+```{python}
+#| label: setup
+#| include: false
+
+import os
+import requests
+import pandas as pd
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
+
+# ── API Banco Central ──────────────────────────────────────────────────────
+usuario  = os.environ.get("BCENTRAL_USER")
+password = os.environ.get("BCENTRAL_PASS")
+URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
+
+def obtener_serie(codigo, dias=3650):
+    hoy    = datetime.today()
+    inicio = (hoy - timedelta(days=dias)).strftime("%Y-%m-%d")
+    fin    = hoy.strftime("%Y-%m-%d")
+    params = {
+        "user": usuario, "pass": password,
+        "function": "GetSeries", "timeseries": codigo,
+        "firstdate": inicio, "lastdate": fin, "format": "json",
+    }
+    try:
+        r    = requests.get(URL_API, params=params, timeout=10)
+        data = r.json()
+        obs  = data["Series"]["Obs"]
+        df_  = pd.DataFrame(obs)
+        col_fecha = "indexDateString" if "indexDateString" in df_.columns else df_.columns[0]
+        col_valor = "value" if "value" in df_.columns else df_.columns[1]
+        df_["fecha"] = pd.to_datetime(df_[col_fecha], format="%d-%m-%Y", errors="coerce")
+        df_["valor"] = pd.to_numeric(df_[col_valor], errors="coerce")
+        return df_.dropna(subset=["valor"]).sort_values("fecha").reset_index(drop=True)
+    except Exception as e:
+        print(f"Error cargando {codigo}: {e}")
+        return pd.DataFrame(columns=["fecha", "valor"])
+
+def fin_de_mes(df_):
+    """Resamplea una serie diaria tomando el último valor disponible de cada mes calendario."""
+    if df_.empty:
+        return df_
+    return (
+        df_.set_index("fecha")["valor"]
+        .resample("ME").last()
+        .reset_index()
+    )
+
+AUTOR = "Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile"
+EJE_X = dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10))
+
+def _agregar_autor(fig):
+    fig.add_annotation(
+        text=AUTOR, x=0, y=-0.22, xref="paper", yref="paper",
+        showarrow=False, font=dict(size=10, color="gray"), xanchor="left",
+    )
+    return fig
+
+def grafico_linea(df_, titulo, ytitle, color, formato_y=",.0f", prefijo="", sufijo=""):
+    """Gráfico de una sola serie."""
+    if df_.empty:
+        return go.Figure()
+
+    ultimo = df_["valor"].iloc[-1]
+    fecha  = df_["fecha"].iloc[-1].strftime("%d/%m/%Y")
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df_["fecha"], y=df_["valor"],
+        mode="lines",
+        line=dict(color=color, width=3),
+        fill="tozeroy",
+        fillcolor=color.replace(")", ",0.08)").replace("rgb", "rgba"),
+        hovertemplate=f"%{{x|%b %Y}}<br><b>{titulo}:</b> {prefijo}%{{y:{formato_y}}}{sufijo}<extra></extra>",
+    ))
+    fig.add_annotation(
+        x=df_["fecha"].iloc[-1], y=df_["valor"].iloc[-1],
+        text=titulo, showarrow=False, font=dict(size=11, color=color), xshift=35, xanchor="left",
+    )
+    fig.update_layout(
+        title=dict(
+            text=f"{titulo}<br><sup>Último dato: {prefijo}{ultimo:{formato_y}}{sufijo} ({fecha})</sup>",
+            x=0.5, xanchor="center", font=dict(size=18),
+        ),
+        template="plotly_white",
+        font_family="Inter",
+        height=480,
+        hovermode="x unified",
+        yaxis=dict(title=ytitle, tickformat=formato_y, tickprefix=prefijo,
+                    gridcolor="rgba(0,0,0,0.08)", zeroline=False),
+        xaxis=dict(**EJE_X, showgrid=False, rangeslider=dict(visible=True, thickness=0.025)),
+        showlegend=False,
+        margin=dict(l=70, r=90, t=90, b=90),
+    )
+    _agregar_autor(fig)
+    return fig
+
+def grafico_multi(trazas, titulo, ytitle):
+    """trazas = lista de (df, nombre, color, ancho, dash). Etiquetas al final reemplazan la leyenda."""
+    fig = go.Figure()
+    for df_, nombre, color, ancho, dash in trazas:
+        if df_.empty:
+            continue
+        fig.add_trace(go.Scatter(
+            x=df_["fecha"], y=df_["valor"],
+            name=nombre,
+            mode="lines",
+            line=dict(color=color, width=ancho, dash=dash),
+            hovertemplate=f"<b>{nombre}</b><br>%{{x|%b %Y}}<br>%{{y:,.2f}}<extra></extra>",
+        ))
+        fig.add_annotation(
+            x=df_["fecha"].iloc[-1], y=df_["valor"].iloc[-1],
+            text=nombre, showarrow=False, font=dict(size=11, color=color), xshift=35, xanchor="left",
+        )
+    fig.update_layout(
+        title=dict(text=titulo, x=0.5, xanchor="center", font=dict(size=18)),
+        yaxis=dict(title=ytitle, tickformat=",.0f", gridcolor="rgba(0,0,0,0.08)", zeroline=False),
+        xaxis=dict(**EJE_X, showgrid=False, rangeslider=dict(visible=True, thickness=0.025)),
+        template="plotly_white",
+        font_family="Inter",
+        showlegend=False,
+        hovermode="x unified",
+        height=560,
+        margin=dict(l=70, r=90, t=90, b=110),
+    )
+    _agregar_autor(fig)
+    return fig
+
+# ── Grupo 1: UF, IVP, UTM ────────────────────────────────────────────────────
+uf_diaria  = obtener_serie("F073.UFF.PRE.Z.D")
+ivp_diaria = obtener_serie("F073.IVP.PRE.Z.D")
+utm_mensual = obtener_serie("F073.UTR.PRE.Z.M")
+
+uf_fin_de_mes  = fin_de_mes(uf_diaria)
+ivp_fin_de_mes = fin_de_mes(ivp_diaria)
+
+# ── Grupo 2: IPC oficial INE, base 2023=100 (placeholder, agregar códigos) ──
+# ipc_general_oficial = obtener_serie("CÓDIGO_IPC_OFICIAL")
+# ipc_subyacente_oficial = obtener_serie("CÓDIGO_IPC_SUBYACENTE")
+
+# ── Grupo 3: IPC / IPC sin volátiles (empalmes BC, base 2023=100) ──────────
+# ipc_empalme = obtener_serie("CÓDIGO_IPC_EMPALME")
+# ipc_sin_volatiles_empalme = obtener_serie("CÓDIGO_SIN_VOLATILES")
+# ipc_volatiles_empalme = obtener_serie("CÓDIGO_VOLATILES")
+
+# ── Grupo 4: IPP, base 2014=100 y base 2019=100 ─────────────────────────────
+# ipp_2014 = obtener_serie("CÓDIGO_IPP_2014")
+# ipp_2019 = obtener_serie("CÓDIGO_IPP_2019")
+```
+
+## 1. Unidad de Fomento (UF), Índice de Valor Promedio (IVP) y Unidad Tributaria Mensual (UTM)
+
+La **Unidad de Fomento (UF)** es una unidad de cuenta reajustable diariamente según la inflación del mes anterior, usada ampliamente en créditos hipotecarios y contratos de largo plazo. El **Índice de Valor Promedio (IVP)** cumple una función similar pero se usa principalmente en instrumentos de deuda pública reajustables. La **Unidad Tributaria Mensual (UTM)** es una unidad de referencia fija durante el mes, usada para fines tributarios y de multas.
+
+### 1.1 Serie diaria
+
+```{python}
+grafico_multi(
+    trazas=[
+        (uf_diaria,  "UF",  "#27ae60", 2, "solid"),
+        (ivp_diaria, "IVP", "#2980b9", 2, "dash"),
+    ],
+    titulo="UF e IVP — Serie Diaria",
+    ytitle="CLP ($)",
+).show()
+```
+
+### 1.2 UF-IVP fin de mes
+
+```{python}
+grafico_multi(
+    trazas=[
+        (uf_fin_de_mes,  "UF fin de mes",  "#27ae60", 2.5, "solid"),
+        (ivp_fin_de_mes, "IVP fin de mes", "#2980b9", 2.5, "dash"),
+    ],
+    titulo="UF e IVP — Fin de Mes",
+    ytitle="CLP ($)",
+).show()
+```
+
+### 1.3 UTM mensual
+
+```{python}
+grafico_linea(utm_mensual, "Unidad Tributaria Mensual (UTM)",
+              "CLP ($)", color="rgb(142,68,173)").show()
+```
+
+---
+
+<!--
+## 2. IPC General y medidas subyacentes (cifras oficiales del INE), base 2023=100
+
+Serie oficial vigente publicada por el INE, disponible desde el inicio de la base 2023=100. No requiere empalme; úsala si solo necesitas el período reciente.
+
+### 2.1 IPC general
+
+```{python}
+# grafico_linea(ipc_general_oficial, "IPC General (base 2023=100)", "Índice", color="rgb(231,76,60)").show()
+```
+
+### 2.2 IPC subyacente
+
+```{python}
+# grafico_linea(ipc_subyacente_oficial, "IPC Subyacente (base 2023=100)", "Índice", color="rgb(41,128,185)").show()
+```
+
+---
+
+## 3. IPC, IPC sin volátiles e IPC volátiles (empalmes del Banco Central), base 2023=100
+
+Serie empalmada por el Banco Central: pega las bases anteriores (2018, 2013, etc.) y las reexpresa en base 2023=100, permitiendo mostrar la serie histórica completa. Úsala para gráficos de largo plazo.
+
+```{python}
+# grafico_multi(
+#     trazas=[
+#         (ipc_empalme,              "IPC general",      "#c0392b", 3,   "solid"),
+#         (ipc_sin_volatiles_empalme,"IPC sin volátiles", "#2980b9", 1.5, "dash"),
+#         (ipc_volatiles_empalme,   "IPC volátiles",      "#f39c12", 1.5, "dot"),
+#     ],
+#     titulo="IPC — Serie Empalmada (base 2023=100)",
+#     ytitle="Índice",
+# ).show()
+```
+
+---
+
+## 4. Índice de Precios al Productor (IPP)
+
+El IPP no tiene una serie de empalme oficial del Banco Central: las bases 2014=100 y 2019=100 están desconectadas. Para una serie larga, hay que empalmarlas manualmente encadenando tasas de variación en el tramo de traslape.
+
+```{python}
+# grafico_multi(
+#     trazas=[
+#         (ipp_2014, "IPP (base 2014=100)", "#7f8c8d", 2, "solid"),
+#         (ipp_2019, "IPP (base 2019=100)", "#e67e22", 2, "solid"),
+#     ],
+#     titulo="Índice de Precios al Productor",
+#     ytitle="Índice",
+# ).show()
+```
+-->
