@@ -21,6 +21,8 @@ website:
         text: Economía
       - href: pages/finanzas_publicas.qmd
         text: Finanzas Públicas
+      - href: pages/Inflacion.qmd
+        text: "Inflación"
       - href: pages/trabajo.qmd
         text: Mercado Laboral
       - href: pages/riesgo_pais.qmd
