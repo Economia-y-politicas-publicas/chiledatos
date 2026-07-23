@@ -291,19 +291,83 @@ grafico_multi_leyenda(
 
 ---
 
-<!--
+
 ## 3. Índice de Precios al Productor (IPP)
 
 El IPP no tiene una serie de empalme oficial del Banco Central: las bases 2014=100 y 2019=100 están desconectadas. Para una serie larga, hay que empalmarlas manualmente encadenando tasas de variación en el tramo de traslape.
 
 ```{python}
-# grafico_multi(
-#     trazas=[
-#         (ipp_2014, "IPP (base 2014=100)", "#7f8c8d", 2, "solid"),
-#         (ipp_2019, "IPP (base 2019=100)", "#e67e22", 2, "solid"),
-#     ],
-#     titulo="Índice de Precios al Productor",
-#     ytitle="Índice",
-# ).show()
+# ── Grupo 3: IPP, base 2019=100 ──────────────────────────────────────────
+IPP_SERIES = {
+    "P0551": {"nombre": "IPP general industrias",       "color": "#c0392b"},
+    "P0552": {"nombre": "IPP industria manufacturera",  "color": "#2980b9"},
+    "P0949": {"nombre": "IPP Minería",                  "color": "#7f8c8d"},
+    "P0990": {"nombre": "IPP electricidad, gas y agua", "color": "#f39c12"},
+    "P1007": {"nombre": "IPP agricultura",              "color": "#27ae60"},
+}
+
+def calcular_variaciones(df_):
+    """A partir de un índice, calcula variación mensual (t/t-1) y a 12 meses (t/t-12)."""
+    if df_.empty:
+        return df_.copy(), df_.copy()
+    df_ = df_.sort_values("fecha").reset_index(drop=True)
+    var_mensual = df_.copy()
+    var_mensual["valor"] = df_["valor"].pct_change(1) * 100
+    var_mensual = var_mensual.dropna(subset=["valor"]).reset_index(drop=True)
+    var_anual = df_.copy()
+    var_anual["valor"] = df_["valor"].pct_change(12) * 100
+    var_anual = var_anual.dropna(subset=["valor"]).reset_index(drop=True)
+    return var_mensual, var_anual
+
+ipp_indice      = {}
+ipp_var_mensual = {}
+ipp_var_anual   = {}
+for cod, info in IPP_SERIES.items():
+    serie = obtener_serie(f"F075.IPP.IND.{cod}.2019.Z.M")
+    ipp_indice[cod] = serie
+    ipp_var_mensual[cod], ipp_var_anual[cod] = calcular_variaciones(serie)
+
+
 ```
--->
+## 3. Índice de Precios al Productor (IPP)
+
+El **IPP** mide la variación de precios que reciben los productores por su producción, a diferencia del IPC que mide precios pagados por los consumidores. La serie disponible usa base 2019=100 y cubre industrias generales, manufactura, minería, electricidad/gas/agua, y agricultura. El Banco Central no publica variaciones para esta serie; se calculan aquí directamente desde el índice.
+
+### 3.1 IPP por sector — Índice (base 2019=100)
+\`\`\`{python}
+grafico_multi_leyenda(
+    trazas=[
+        (ipp_indice[cod], info["nombre"], info["color"])
+        for cod, info in IPP_SERIES.items()
+    ],
+    titulo="IPP por Sector — Índice (base 2019=100)",
+    ytitle="Índice",
+    formato_y=",.1f",
+).show()
+\`\`\`
+
+### 3.2 IPP por sector — Variación Mensual
+\`\`\`{python}
+grafico_multi_leyenda(
+    trazas=[
+        (ipp_var_mensual[cod], info["nombre"], info["color"])
+        for cod, info in IPP_SERIES.items()
+    ],
+    titulo="IPP por Sector — Variación Mensual (%)",
+    ytitle="Variación (%)",
+    sufijo="%",
+).show()
+\`\`\`
+
+### 3.3 IPP por sector — Variación a 12 Meses
+\`\`\`{python}
+grafico_multi_leyenda(
+    trazas=[
+        (ipp_var_anual[cod], info["nombre"], info["color"])
+        for cod, info in IPP_SERIES.items()
+    ],
+    titulo="IPP por Sector — Variación a 12 Meses (%)",
+    ytitle="Variación (%)",
+    sufijo="%",
+).show()
+\`\`\`
