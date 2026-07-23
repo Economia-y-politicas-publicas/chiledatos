@@ -290,12 +290,6 @@ grafico_multi_leyenda(
 ```
 
 ---
-
-
-## 3. Índice de Precios al Productor (IPP)
-
-El IPP no tiene una serie de empalme oficial del Banco Central: las bases 2014=100 y 2019=100 están desconectadas. Para una serie larga, hay que empalmarlas manualmente encadenando tasas de variación en el tramo de traslape.
-
 ```{python}
 # ── Grupo 3: IPP, base 2019=100 ──────────────────────────────────────────
 IPP_SERIES = {
@@ -326,15 +320,15 @@ for cod, info in IPP_SERIES.items():
     serie = obtener_serie(f"F075.IPP.IND.{cod}.2019.Z.M")
     ipp_indice[cod] = serie
     ipp_var_mensual[cod], ipp_var_anual[cod] = calcular_variaciones(serie)
-
-
 ```
+
 ## 3. Índice de Precios al Productor (IPP)
 
 El **IPP** mide la variación de precios que reciben los productores por su producción, a diferencia del IPC que mide precios pagados por los consumidores. La serie disponible usa base 2019=100 y cubre industrias generales, manufactura, minería, electricidad/gas/agua, y agricultura. El Banco Central no publica variaciones para esta serie; se calculan aquí directamente desde el índice.
 
 ### 3.1 IPP por sector — Índice (base 2019=100)
-\`\`\`{python}
+
+```{python}
 grafico_multi_leyenda(
     trazas=[
         (ipp_indice[cod], info["nombre"], info["color"])
@@ -344,10 +338,11 @@ grafico_multi_leyenda(
     ytitle="Índice",
     formato_y=",.1f",
 ).show()
-\`\`\`
+```
 
 ### 3.2 IPP por sector — Variación Mensual
-\`\`\`{python}
+
+```{python}
 grafico_multi_leyenda(
     trazas=[
         (ipp_var_mensual[cod], info["nombre"], info["color"])
@@ -357,10 +352,11 @@ grafico_multi_leyenda(
     ytitle="Variación (%)",
     sufijo="%",
 ).show()
-\`\`\`
+```
 
 ### 3.3 IPP por sector — Variación a 12 Meses
-\`\`\`{python}
+
+```{python}
 grafico_multi_leyenda(
     trazas=[
         (ipp_var_anual[cod], info["nombre"], info["color"])
@@ -370,4 +366,4 @@ grafico_multi_leyenda(
     ytitle="Variación (%)",
     sufijo="%",
 ).show()
-\`\`\`
+```
