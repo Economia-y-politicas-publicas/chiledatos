@@ -367,3 +367,101 @@ grafico_multi_leyenda(
     sufijo="%",
 ).show()
 ```
+
+---
+```{python}
+#| label: ipc-divisiones-setup
+#| include: false
+
+# ── Grupo 5: IPC — Aperturas por División (Serie EP23, base 2023=100) ──────
+# Ponderadores fijos publicados por el INE (canasta base 2023=100).
+DIVISIONES_IPC = {
+    "DIV10000":  {"nombre": "Alimentos y bebidas no alcohólicas", "ponderador": 22.15, "color": "#c0392b"},
+    "DIV20000":  {"nombre": "Bebidas alcohólicas y tabaco",       "ponderador": 3.68,  "color": "#2980b9"},
+    "DIV30000":  {"nombre": "Vestuario y calzado",                "ponderador": 2.90,  "color": "#27ae60"},
+    "DIV40000":  {"nombre": "Vivienda y servicios básicos",       "ponderador": 16.76, "color": "#8e44ad"},
+    "DIV50000":  {"nombre": "Equipamiento y mantención del hogar","ponderador": 6.19,  "color": "#f39c12"},
+    "DIV60000":  {"nombre": "Salud",                              "ponderador": 8.21,  "color": "#16a085"},
+    "DIV70000":  {"nombre": "Transporte",                         "ponderador": 13.45, "color": "#d35400"},
+    "DIV80000":  {"nombre": "Información y comunicación",         "ponderador": 6.65,  "color": "#7f8c8d"},
+    "DIV90000":  {"nombre": "Recreación, deportes y cultura",     "ponderador": 4.75,  "color": "#34495e"},
+    "DIV100000": {"nombre": "Educación",                          "ponderador": 4.20,  "color": "#e67e22"},
+    "DIV110000": {"nombre": "Restaurantes y alojamiento",         "ponderador": 6.22,  "color": "#2c3e50"},
+    "DIV120000": {"nombre": "Seguros y servicios financieros",    "ponderador": 1.10,  "color": "#95a5a6"},
+    "DIV130000": {"nombre": "Bienes y servicios diversos",        "ponderador": 3.73,  "color": "#1abc9c"},
+}
+
+ipc_div_indice      = {}
+ipc_div_var_mensual = {}
+ipc_div_var_anual   = {}
+for cod, info in DIVISIONES_IPC.items():
+    serie = obtener_serie(f"F074.IPC.IND.{cod}.2023.C.M")
+    ipc_div_indice[cod] = serie
+    ipc_div_var_mensual[cod], ipc_div_var_anual[cod] = calcular_variaciones(serie)
+
+df_ponderadores_ipc = (
+    pd.DataFrame([
+        {"División": info["nombre"], "Ponderador (%)": info["ponderador"]}
+        for info in DIVISIONES_IPC.values()
+    ])
+    .sort_values("Ponderador (%)", ascending=False)
+    .reset_index(drop=True)
+)
+df_ponderadores_ipc.index = df_ponderadores_ipc.index + 1
+df_ponderadores_ipc.index.name = "N°"
+```
+
+## 5. IPC — Aperturas por División (Base 2023=100)
+
+El IPC se descompone en **13 divisiones** de gasto, cada una con un ponderador fijo dentro de la canasta según su participación en el gasto de los hogares (base 2023=100). A continuación se presenta el ponderador de cada división, su índice y sus variaciones mensual (t/t-1) e interanual (t/t-12), calculadas directamente a partir del índice ya que el Banco Central no publica series de variación para esta apertura.
+
+### 5.1 Ponderadores por división
+
+```{python}
+#| echo: false
+df_ponderadores_ipc.style.format({"Ponderador (%)": "{:.2f}"}).background_gradient(
+    subset=["Ponderador (%)"], cmap="Reds"
+)
+```
+
+### 5.2 IPC por división — Índice (base 2023=100)
+
+```{python}
+grafico_multi_leyenda(
+    trazas=[
+        (ipc_div_indice[cod], info["nombre"], info["color"])
+        for cod, info in DIVISIONES_IPC.items()
+    ],
+    titulo="IPC por División — Índice (base 2023=100)",
+    ytitle="Índice",
+    formato_y=",.1f",
+).show()
+```
+
+### 5.3 IPC por división — Variación Mensual
+
+```{python}
+grafico_multi_leyenda(
+    trazas=[
+        (ipc_div_var_mensual[cod], info["nombre"], info["color"])
+        for cod, info in DIVISIONES_IPC.items()
+    ],
+    titulo="IPC por División — Variación Mensual (%)",
+    ytitle="Variación (%)",
+    sufijo="%",
+).show()
+```
+
+### 5.4 IPC por división — Variación a 12 Meses
+
+```{python}
+grafico_multi_leyenda(
+    trazas=[
+        (ipc_div_var_anual[cod], info["nombre"], info["color"])
+        for cod, info in DIVISIONES_IPC.items()
+    ],
+    titulo="IPC por División — Variación a 12 Meses (%)",
+    ytitle="Variación (%)",
+    sufijo="%",
+).show()
+```
