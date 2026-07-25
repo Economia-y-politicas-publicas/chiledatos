@@ -56,7 +56,7 @@ AUTOR = "Autor: Juan Miguieles Onetto | Fuente: Banco Central de Chile"
 URL_FUENTE_BC = "https://si3.bcentral.cl/siete"
 EJE_X = dict(dtick="M6", tickformat="%b %Y", tickangle=45, tickfont=dict(size=10))
 
-def _agregar_autor(fig, y=-0.40):
+def _agregar_autor(fig, y=-0.50):
     """Anotación de autor, ubicada debajo de la leyenda (que vive en y=-0.28)."""
     fig.add_annotation(
         text=f'{AUTOR} · <a href="{URL_FUENTE_BC}" target="_blank">Ver datos en el Banco Central</a>',
