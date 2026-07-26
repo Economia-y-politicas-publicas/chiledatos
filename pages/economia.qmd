@@ -13,6 +13,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+
 usuario  = os.environ.get("BCENTRAL_USER")
 password = os.environ.get("BCENTRAL_PASS")
 URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
@@ -55,22 +56,22 @@ imacec_servicios = obtener_serie("F032.IMC.IND.Z.Z.EP18.SERV.Z.0.M")
 imacec_a_costo_de_factores = obtener_serie("F032.ICF.IND.Z.Z.EP18.Z.Z.0.M")
 imacec_sobre_los_productos = obtener_serie("F032.IMC.IND.Z.Z.EP18.IMP.Z.0.M")
 imacec_no_mineros = obtener_serie("F032.IMC.IND.Z.Z.EP18.N03.Z.0.M")
-from itables import show
 
-show(imacec_normal[["fecha", "valor"]])
-from great_tables import GT
-
-GT(imacec_normal[["fecha", "valor"]].tail(12)).tab_header(
-    title="IMACEC - Últimos 12 meses"
-)
+# Mostrar datos
 imacec_normal.info()
-imacec_normal.head()
 print(imacec_normal.columns.tolist())
+imacec_normal[["fecha", "valor"]].tail(12)
+```
 
-
-fig_imacec1 = px.line(imacec_normal, x='fecha', y='valor')
+```{python}
+# Gráfico
+fig_imacec1 = px.line(
+    imacec_normal, x='fecha', y='valor',
+    title="IMACEC - Serie original",
+    labels={"fecha": "Fecha", "valor": "Índice (2018=100)"}
+)
+fig_imacec1.update_layout(template="plotly_white")
 fig_imacec1.show()
-
 ```
 
 ## ¿Qué es el PIB?
