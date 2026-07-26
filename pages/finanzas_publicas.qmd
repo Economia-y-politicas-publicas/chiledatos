@@ -40,7 +40,7 @@ usuario  = os.environ.get("BCENTRAL_USER")
 password = os.environ.get("BCENTRAL_PASS")
 URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
 
-def obtener_serie(codigo, dias=3650):
+def obtener_serie(codigo, dias=3215):
     hoy    = datetime.today()
     inicio = (hoy - timedelta(days=dias)).strftime("%Y-%m-%d")
     fin    = hoy.strftime("%Y-%m-%d")

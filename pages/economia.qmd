@@ -86,7 +86,12 @@ for nombre, (df_serie, visibilidad) in series_dict.items():
     ))
 
 fig_imacec.update_layout(
-    title="IMACEC y sus componentes",
+    title=dict(
+        text="IMACEC y sus componentes",
+        x=0.5,              # 0 = izquierda, 0.5 = centro, 1 = derecha
+        xanchor="center",
+        yanchor="top"
+    ),
     xaxis_title="Fecha",
     yaxis_title="Índice (2018=100)",
     template="plotly_white",
@@ -96,22 +101,22 @@ fig_imacec.update_layout(
         y=-0.25,
         xanchor="center",
         x=0.5,
-        entrywidth=140,              # ancho fijo en píxeles por ítem (antes: fracción)
-        entrywidthmode="pixels",     # cambia de "fraction" a "pixels"
-        tracegroupgap=20,
-        font=dict(size=12)
+        entrywidth=0.25,              # 1/4 del ancho = 4 columnas
+        entrywidthmode="fraction",    # <- clave para que sea exacto
+        tracegroupgap=26,
+        font=dict(size=11)
     ),
-    margin=dict(l=70, r=40, t=60, b=190)   # márgenes del gráfico completo
+    margin=dict(l=70, r=40, t=60, b=180)   # márgenes del gráfico completo
 )
 
 # Nombre del autor debajo de la leyenda
 fig_imacec.add_annotation(
     text="Fuente: Banco Central de Chile. Gráfico: Juan Enrique Miguieles.",
     xref="paper", yref="paper",
-    x=0.5, y=-0.52,
+    x=0.5, y=-0.55,
     showarrow=False,
     font=dict(size=10, color="gray"),
-    xanchor="center"
+    xanchor="right"
 )
 
 fig_imacec.show()
