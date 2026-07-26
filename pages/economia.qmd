@@ -4,6 +4,65 @@ subtitle: "Crecimiento del PIB real en Chile"
 date: last-modified
 ---
 
+# ── API Banco Central (fondos soberanos) ───────────────────────────────────────
+
+```{python}
+import os
+import requests
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
+usuario  = os.environ.get("BCENTRAL_USER")
+password = os.environ.get("BCENTRAL_PASS")
+URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
+
+def obtener_serie(codigo, dias=3215):
+    hoy    = datetime.today()
+    inicio = (hoy - timedelta(days=dias)).strftime("%Y-%m-%d")
+    fin    = hoy.strftime("%Y-%m-%d")
+    params = {
+        "user": usuario, "pass": password,
+        "function": "GetSeries", "timeseries": codigo,
+        "firstdate": inicio, "lastdate": fin, "format": "json",
+    }
+    try:
+        r    = requests.get(URL_API, params=params, timeout=10)
+        data = r.json()
+        obs  = data["Series"]["Obs"]
+        df_  = pd.DataFrame(obs)
+        col_fecha = "indexDateString" if "indexDateString" in df_.columns else df_.columns[0]
+        col_valor = "value" if "value" in df_.columns else df_.columns[1]
+        df_["fecha"] = pd.to_datetime(df_[col_fecha], format="%d-%m-%Y", errors="coerce")
+        df_["valor"] = pd.to_numeric(df_[col_valor], errors="coerce")
+        return df_.dropna(subset=["valor"]).sort_values("fecha").reset_index(drop=True)
+    except Exception as e:
+        print(f"Error cargando {codigo}: {e}")
+        return pd.DataFrame(columns=["fecha", "valor"])
+```
+
+## IMACEC
+
+```{python}
+#Series originales
+imacec_normal = obtener_serie("F032.IMC.IND.Z.Z.EP18.Z.Z.0.M")
+produccion_bienes = obtener_serie("F032.IMC.IND.Z.Z.EP18.PB.Z.0.M")
+imacec_minero = obtener_serie("F032.IMC.IND.Z.Z.EP18.03.Z.0.M")
+imacec_industria = obtener_serie("F032.IMC.IND.Z.Z.EP18.04.Z.0.M")
+imacec_resto_de_bienes = obtener_serie("F032.IMC.IND.Z.Z.EP18.RB.Z.0.M")
+imacec_comercio = obtener_serie("F032.IMC.IND.Z.Z.EP18.COM.Z.0.M")
+imacec_servicios = obtener_serie("F032.IMC.IND.Z.Z.EP18.SERV.Z.0.M")
+imacec_a_costo_de_factores = obtener_serie("F032.ICF.IND.Z.Z.EP18.Z.Z.0.M")
+imacec_sobre_los_productos = obtener_serie("F032.IMC.IND.Z.Z.EP18.IMP.Z.0.M")
+imacec_no_mineros = obtener_serie("F032.IMC.IND.Z.Z.EP18.N03.Z.0.M")
+
+imacec_normal
+
+import plotly.express as px
+fig_imacec1 = px.line(imacec_normal, x='year', y='lifeExp')
+fig.show()
+```
+
 ## ¿Qué es el PIB?
 
 El **Producto Interno Bruto (PIB)** mide el valor total de todos los bienes y servicios producidos dentro de un país en un período determinado. Es el indicador más usado para medir el tamaño y la salud de una economía.
@@ -19,13 +78,11 @@ El PIB puede medirse a **precios corrientes** (nominales) o a **precios encadena
 
 La técnica de **encadenamiento** actualiza el año de referencia periódicamente, evitando que los precios de un año base distorsionen las comparaciones a largo plazo. Es el estándar internacional recomendado por el FMI y usado por el Banco Central de Chile.
 
----
-
+------------------------------------------------------------------------
 
 > En los gráficos siguientes se usa siempre el PIB real encadenado, expresado como **tasa de variación anual (%)**.
 
----
-
+------------------------------------------------------------------------
 
 ```{python}
 #| label: funcion-autor
@@ -128,15 +185,15 @@ fig.show()
 
 ## Contexto histórico
 
-| Evento | Año | Crecimiento |
-|---|---|---|
-| Crisis asiática | 1999 | -0.27% |
-| Crisis financiera global | 2009 | -1.12% |
-| Estallido social | 2019 | 0.64% |
-| Pandemia COVID-19 | 2020 | -6.14% |
-| Rebote post-pandemia | 2021 | +11.34% |
+| Evento                   | Año  | Crecimiento |
+|--------------------------|------|-------------|
+| Crisis asiática          | 1999 | -0.27%      |
+| Crisis financiera global | 2009 | -1.12%      |
+| Estallido social         | 2019 | 0.64%       |
+| Pandemia COVID-19        | 2020 | -6.14%      |
+| Rebote post-pandemia     | 2021 | +11.34%     |
 
----
+------------------------------------------------------------------------
 
 ## Análisis del ciclo económico de Chile
 
@@ -144,14 +201,13 @@ Una serie de tiempo suele estar formada por distintos patrones que actúan al mi
 
 En este ejemplo, la serie presenta una tendencia creciente, una estacionalidad que genera oscilaciones regulares cada cierto período y un ciclo de mayor duración que produce fases de aceleración y desaceleración. La interacción de estos componentes determina la trayectoria observada de la serie.
 
-
 **La curva Azul** correponde a los datos observados. **La recta naranja** muentra la tendencia de la serie. Mientras que el **ciclo** es de color rojo y la **estacionalidad** es de color verde
+
 ```{python}
 #| echo: false
 from IPython.display import Image
 Image("../imagenes/economia/ciclo_tendencia_estacionalidad.png", width=800)
 ```
-
 
 <strong>Los siguientes gráficos muestran diversas comparaciones del ciclo económico (PIB) y las componentes del gasto del PIB.</strong>
 
@@ -165,8 +221,7 @@ from IPython.display import Image
 Image("../imagenes/economia/consumototal.png", width=800)
 ```
 
----
-
+------------------------------------------------------------------------
 
 ```{python}
 #| label: setup-owd
