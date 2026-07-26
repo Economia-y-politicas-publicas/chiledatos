@@ -4,7 +4,6 @@ subtitle: "Crecimiento del PIB real en Chile"
 date: last-modified
 ---
 
-# ── API Banco Central (fondos soberanos) ───────────────────────────────────────
 
 ```{python}
 import os
@@ -18,7 +17,7 @@ usuario  = os.environ.get("BCENTRAL_USER")
 password = os.environ.get("BCENTRAL_PASS")
 URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
 
-def obtener_serie(codigo, dias=3215):
+def obtener_serie(codigo, dias=9000):
     hoy    = datetime.today()
     inicio = (hoy - timedelta(days=dias)).strftime("%Y-%m-%d")
     fin    = hoy.strftime("%Y-%m-%d")
@@ -57,21 +56,65 @@ imacec_a_costo_de_factores = obtener_serie("F032.ICF.IND.Z.Z.EP18.Z.Z.0.M")
 imacec_sobre_los_productos = obtener_serie("F032.IMC.IND.Z.Z.EP18.IMP.Z.0.M")
 imacec_no_mineros = obtener_serie("F032.IMC.IND.Z.Z.EP18.N03.Z.0.M")
 
-# Mostrar datos
-imacec_normal.info()
-print(imacec_normal.columns.tolist())
-imacec_normal[["fecha", "valor"]].tail(12)
 ```
 
 ```{python}
 # Gráfico
-fig_imacec1 = px.line(
-    imacec_normal, x='fecha', y='valor',
-    title="IMACEC - Serie original",
-    labels={"fecha": "Fecha", "valor": "Índice (2018=100)"}
+# Gráfico combinado - Todos los componentes de IMACEC
+fig_imacec = go.Figure()
+
+series_dict = {
+    "IMACEC": (imacec_normal, True),
+    "Producción de bienes": (produccion_bienes, "legendonly"),
+    "Minería": (imacec_minero, "legendonly"),
+    "Industria": (imacec_industria, "legendonly"),
+    "Resto de bienes": (imacec_resto_de_bienes, "legendonly"),
+    "Comercio": (imacec_comercio, "legendonly"),
+    "Servicios": (imacec_servicios, "legendonly"),
+    "A costo de factores": (imacec_a_costo_de_factores, "legendonly"),
+    "Sobre los productos": (imacec_sobre_los_productos, "legendonly"),
+    "No mineros": (imacec_no_mineros, "legendonly"),
+}
+
+for nombre, (df_serie, visibilidad) in series_dict.items():
+    fig_imacec.add_trace(go.Scatter(
+        x=df_serie["fecha"],
+        y=df_serie["valor"],
+        mode="lines",
+        name=nombre,
+        visible=visibilidad
+    ))
+
+fig_imacec.update_layout(
+    title="IMACEC y sus componentes",
+    xaxis_title="Fecha",
+    yaxis_title="Índice (2018=100)",
+    template="plotly_white",
+    legend=dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.25,
+        xanchor="center",
+        x=0.5,
+        entrywidth=140,              # ancho fijo en píxeles por ítem (antes: fracción)
+        entrywidthmode="pixels",     # cambia de "fraction" a "pixels"
+        tracegroupgap=20,
+        font=dict(size=12)
+    ),
+    margin=dict(l=70, r=40, t=60, b=190)   # márgenes del gráfico completo
 )
-fig_imacec1.update_layout(template="plotly_white")
-fig_imacec1.show()
+
+# Nombre del autor debajo de la leyenda
+fig_imacec.add_annotation(
+    text="Fuente: Banco Central de Chile. Gráfico: Juan Enrique Miguieles.",
+    xref="paper", yref="paper",
+    x=0.5, y=-0.52,
+    showarrow=False,
+    font=dict(size=10, color="gray"),
+    xanchor="center"
+)
+
+fig_imacec.show()
 ```
 
 ## ¿Qué es el PIB?
