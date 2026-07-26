@@ -56,10 +56,12 @@ imacec_a_costo_de_factores = obtener_serie("F032.ICF.IND.Z.Z.EP18.Z.Z.0.M")
 imacec_sobre_los_productos = obtener_serie("F032.IMC.IND.Z.Z.EP18.IMP.Z.0.M")
 imacec_no_mineros = obtener_serie("F032.IMC.IND.Z.Z.EP18.N03.Z.0.M")
 
-imacec_normal
+
+imacec_normal.info()
+imacec_normal.head()
 
 import plotly.express as px
-fig_imacec1 = px.line(imacec_normal, x='year', y='lifeExp')
+fig_imacec1 = px.line(imacec_normal, x=df_serie["fecha"], y=df_serie["valor"])
 fig.show()
 ```
 
