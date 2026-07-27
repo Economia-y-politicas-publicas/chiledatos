@@ -4,7 +4,6 @@ subtitle: "Crecimiento del PIB real en Chile"
 date: last-modified
 ---
 
-
 ```{python}
 import os
 import requests
@@ -13,8 +12,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
+
+
 usuario  = os.environ.get("BCENTRAL_USER")
 password = os.environ.get("BCENTRAL_PASS")
+
+
 URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
 
 def obtener_serie(codigo, dias=9000):
@@ -27,7 +30,7 @@ def obtener_serie(codigo, dias=9000):
         "firstdate": inicio, "lastdate": fin, "format": "json",
     }
     try:
-        r    = requests.get(URL_API, params=params, timeout=10)
+        r    = requests.get(URL_API, params=params, timeout=15)
         data = r.json()
         obs  = data["Series"]["Obs"]
         df_  = pd.DataFrame(obs)
@@ -39,12 +42,15 @@ def obtener_serie(codigo, dias=9000):
     except Exception as e:
         print(f"Error cargando {codigo}: {e}")
         return pd.DataFrame(columns=["fecha", "valor"])
+
+      
 ```
 
 ## IMACEC
 
 ```{python}
 #Series originales
+
 imacec_normal = obtener_serie("F032.IMC.IND.Z.Z.EP18.Z.Z.0.M")
 produccion_bienes = obtener_serie("F032.IMC.IND.Z.Z.EP18.PB.Z.0.M")
 imacec_minero = obtener_serie("F032.IMC.IND.Z.Z.EP18.03.Z.0.M")
@@ -120,6 +126,239 @@ fig_imacec.add_annotation(
 )
 
 fig_imacec.show()
+
+
+import plotly.graph_objects as go
+
+series_dict1 = {
+    "IMACEC": (imacec_normal, True),
+    "Producción de bienes": (produccion_bienes, "legendonly"),
+    "Minería": (imacec_minero, "legendonly"),
+    "Industria": (imacec_industria, "legendonly"),
+    "Resto de bienes": (imacec_resto_de_bienes, "legendonly"),
+    "Comercio": (imacec_comercio, "legendonly"),
+    "Servicios": (imacec_servicios, "legendonly"),
+    "A costo de factores": (imacec_a_costo_de_factores, "legendonly"),
+    "Sobre los productos": (imacec_sobre_los_productos, "legendonly"),
+    "No mineros": (imacec_no_mineros, "legendonly"),
+}
+
+fig_var_normal = go.Figure()
+for nombre, (df_serie, visibilidad) in series_dict1.items():
+    # Ordenar y calcular variaciones
+    df_serie = df_serie.sort_values("fecha").reset_index(drop=True)
+    
+    df_serie["var_intermensual"] = df_serie["valor"].pct_change() * 100
+    df_serie["var_interanual"] = df_serie["valor"].pct_change(12) * 100
+    # Color condicional: rojo si negativo, verde si positivo
+    colores = [
+        "crimson" if v < 0 else "seagreen"
+        for v in df_serie["var_interanual"]
+    ]
+    fig_var_normal.add_trace(go.Bar(
+        x=df_serie["fecha"],
+        y=df_serie["var_interanual"],
+        name=nombre,
+        marker_color=colores,
+        visible=visibilidad,
+        text=df_serie["var_interanual"].round(1),   
+        textposition="outside",                     
+        texttemplate="%{text:.1f}" 
+    ))
+fig_var_normal.update_layout(
+    title=dict(
+        text="IMACEC - Variación interanual (%)",
+        x=0.5,
+        xanchor="center",
+        yanchor="top"
+    ),
+    xaxis_title="Fecha",
+    yaxis_title="Variación interanual (%)",
+    template="plotly_white",
+    legend=dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.25,
+        xanchor="center",
+        x=0.5,
+        entrywidth=0.25,
+        entrywidthmode="fraction",
+        tracegroupgap=26,
+        font=dict(size=11)
+    ),
+    margin=dict(l=70, r=40, t=60, b=180),
+    bargap=0.2
+)
+fig_var_normal.add_hline(y=0, line_dash="dot", line_color="gray")
+fig_var_normal.add_annotation(
+    text="Fuente: Banco Central de Chile. Gráfico: Juan Enrique Miguieles.",
+    xref="paper", yref="paper",
+    x=0.5, y=-0.55,
+    showarrow=False,
+    font=dict(size=10, color="gray"),
+    xanchor="right"
+)
+fig_var_normal.show()
+
+
+
+
+```
+
+```{python}
+
+imacec_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.Z.Z.1.M")
+imacec_bienes_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.PB.Z.1.M")
+imacec_minero_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.03.Z.1.M")
+imacec_industria_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.04.Z.1.M")
+imacec_resto_de_bienes_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.RB.Z.1.M")
+imacec_comercio_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.COM.Z.1.M")
+imacec_servicios_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.SERV.Z.1.M")
+imacec_costo_de_factores_desestacionalizado = obtener_serie("F032.ICF.IND.Z.Z.EP18.Z.Z.1.M")
+imacec_impuestos_productos_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.IMP.Z.1.M")
+imacec_no_minero_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.N03.Z.1.M")
+
+fig_imacec1 = go.Figure()
+
+series_dict = {
+    "IMACEC": (imacec_desestacionalizado, True),
+    "Producción de bienes": (imacec_bienes_desestacionalizado, "legendonly"),
+    "Minería": (imacec_minero_desestacionalizado, "legendonly"),
+    "Industria": (imacec_industria_desestacionalizado, "legendonly"),
+    "Resto de bienes": (imacec_resto_de_bienes_desestacionalizado, "legendonly"),
+    "Comercio": (imacec_comercio_desestacionalizado, "legendonly"),
+    "Servicios": (imacec_servicios_desestacionalizado, "legendonly"),
+    "A costo de factores": (imacec_costo_de_factores_desestacionalizado, "legendonly"),
+    "Sobre los productos": (imacec_impuestos_productos_desestacionalizado, "legendonly"),
+    "No mineros": (imacec_no_minero_desestacionalizado, "legendonly"),
+}
+
+for nombre, (df_serie, visibilidad) in series_dict.items():
+    fig_imacec1.add_trace(go.Scatter(
+        x=df_serie["fecha"],
+        y=df_serie["valor"],
+        mode="lines",
+        name=nombre,
+        visible=visibilidad
+    ))
+
+fig_imacec1.update_layout(
+    title=dict(
+        text="IMACEC desestacionalizado",
+        x=0.5,              # 0 = izquierda, 0.5 = centro, 1 = derecha
+        xanchor="center",
+        yanchor="top"
+    ),
+    xaxis_title="Fecha",
+    yaxis_title="Índice (2018=100)",
+    template="plotly_white",
+    legend=dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.25,
+        xanchor="center",
+        x=0.5,
+        entrywidth=0.25,              # 1/4 del ancho = 4 columnas
+        entrywidthmode="fraction",    # <- clave para que sea exacto
+        tracegroupgap=26,
+        font=dict(size=11)
+    ),
+    margin=dict(l=70, r=40, t=60, b=180)   # márgenes del gráfico completo
+)
+
+# Nombre del autor debajo de la leyenda
+fig_imacec1.add_annotation(
+    text="Fuente: Banco Central de Chile. Gráfico: Juan Enrique Miguieles.",
+    xref="paper", yref="paper",
+    x=0.5, y=-0.55,
+    showarrow=False,
+    font=dict(size=10, color="gray"),
+    xanchor="right"
+)
+
+fig_imacec1.show()
+
+
+
+
+import plotly.graph_objects as go
+
+series_dict = {
+    "IMACEC": (imacec_desestacionalizado, True),
+    "Producción de bienes": (imacec_bienes_desestacionalizado, "legendonly"),
+    "Minería": (imacec_minero_desestacionalizado, "legendonly"),
+    "Industria": (imacec_industria_desestacionalizado, "legendonly"),
+    "Resto de bienes": (imacec_resto_de_bienes_desestacionalizado, "legendonly"),
+    "Comercio": (imacec_comercio_desestacionalizado, "legendonly"),
+    "Servicios": (imacec_servicios_desestacionalizado, "legendonly"),
+    "A costo de factores": (imacec_costo_de_factores_desestacionalizado, "legendonly"),
+    "Sobre los productos": (imacec_impuestos_productos_desestacionalizado, "legendonly"),
+    "No mineros": (imacec_no_minero_desestacionalizado, "legendonly"),
+}
+
+fig_var = go.Figure()
+
+for nombre, (df_serie, visibilidad) in series_dict.items():
+    # Ordenar y calcular variación intermensual
+    df_serie = df_serie.sort_values("fecha").reset_index(drop=True)
+    df_serie["var_intermensual"] = df_serie["valor"].pct_change() * 100
+
+    # Color condicional: rojo si negativo, verde si positivo
+    colores = [
+        "crimson" if v < 0 else "seagreen"
+        for v in df_serie["var_intermensual"]
+    ]
+
+    fig_var.add_trace(go.Bar(
+        x=df_serie["fecha"],
+        y=df_serie["var_intermensual"],
+        name=nombre,
+        marker_color=colores,
+        visible=visibilidad,
+                text=df_serie["var_intermensual"].round(1),   
+        textposition="outside",                     
+        texttemplate="%{text:.1f}" 
+    ))
+
+fig_var.update_layout(
+    title=dict(
+        text="IMACEC - Variación intermensual (%)",
+        x=0.5,
+        xanchor="center",
+        yanchor="top"
+    ),
+    xaxis_title="Fecha",
+    yaxis_title="Variación mensual (%)",
+    template="plotly_white",
+    legend=dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.25,
+        xanchor="center",
+        x=0.5,
+        entrywidth=0.25,
+        entrywidthmode="fraction",
+        tracegroupgap=26,
+        font=dict(size=11)
+    ),
+    margin=dict(l=70, r=40, t=60, b=180),
+    bargap=0.2
+)
+
+fig_var.add_hline(y=0, line_dash="dot", line_color="gray")
+
+fig_var.add_annotation(
+    text="Fuente: Banco Central de Chile. Gráfico: Juan Enrique Miguieles.",
+    xref="paper", yref="paper",
+    x=0.5, y=-0.55,
+    showarrow=False,
+    font=dict(size=10, color="gray"),
+    xanchor="right"
+)
+
+fig_var.show()
+
+
 ```
 
 ## ¿Qué es el PIB?
