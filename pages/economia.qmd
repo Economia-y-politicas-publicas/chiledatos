@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 
 usuario  = os.environ.get("BCENTRAL_USER")
 password = os.environ.get("BCENTRAL_PASS")
-
+#save
 
 URL_API  = "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx"
 
@@ -199,9 +199,6 @@ fig_var_normal.add_annotation(
     xanchor="right"
 )
 fig_var_normal.show()
-
-
-
 
 ```
 
