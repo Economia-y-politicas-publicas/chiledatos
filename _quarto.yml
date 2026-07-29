@@ -3,6 +3,7 @@ project:
   output-dir: _site
   resources:
     - googleef02c443fa87502b.html
+    - assets/time-theme.js
 
 website:
   title: "Economía y Políticas Públicas"
@@ -46,9 +47,11 @@ website:
 format:
   html:
     lang: es
+    include-in-header:
+      - text: '<script src="/assets/time-theme.js"></script>'
     theme:
-      dark: [lux, styles/theme.scss, styles/theme-dark.scss]
       light: [lux, styles/theme.scss, styles/theme-light.scss]
+      dark: [lux, styles/theme.scss, styles/theme-dark.scss]
     title-block-banner: true
     toc: true
     toc-depth: 3
