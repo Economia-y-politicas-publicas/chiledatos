@@ -7,6 +7,7 @@ project:
 website:
   title: "Economía y Políticas Públicas"
   description: "Hub de información económica sobre Chile y el mundo"
+  site-url: "https://economia-y-politicas-publicas.github.io/chiledatos"
   open-graph: true
   twitter-card: true
   navbar:
@@ -15,8 +16,8 @@ website:
     left:
       - href: index.qmd
         text: Inicio
-      - text: "Noticias"
-        href: pages/noticias/index.qmd
+      - href: pages/noticias/index.qmd
+        text: "Noticias"
       - href: pages/economia.qmd
         text: Economía
       - href: pages/finanzas_publicas.qmd
@@ -29,6 +30,8 @@ website:
         text: "Riesgo País"
       - href: pages/indicadores_vivo.qmd
         text: "📡 Indicadores en Vivo"
+      - href: pages/Cepal.qmd
+        text: "América Latina y el Caribe"
       - href: pages/Donaciones.qmd
         text: "Donaciones"
     right:
@@ -42,9 +45,10 @@ website:
 
 format:
   html:
+    lang: es
     theme:
-      - lux
-      - styles/custom.scss
+      dark: [lux, styles/theme.scss, styles/theme-dark.scss]
+      light: [lux, styles/theme.scss, styles/theme-light.scss]
     title-block-banner: true
     toc: true
     toc-depth: 3

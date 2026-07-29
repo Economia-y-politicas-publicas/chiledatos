@@ -1,12 +1,13 @@
 ---
-title: ""
+title: "Inicio"
 page-layout: full
 toc: false
+title-block-banner: false
 listing:
   - id: latest-news
     contents:
-      - /pages/noticias/posts
-      - "!index.qmd"
+      - pages/noticias/posts
+      - "!pages/noticias/posts/index.qmd"
     sort: "date desc"
     type: grid
     categories: false
@@ -21,32 +22,32 @@ listing:
 <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2/tsparticles.slim.bundle.min.js"></script>
 <script>
 tsParticles.load("particles-js", {
+  background: { color: "transparent" },
   particles: {
-    number: { value: 60 },
-    color: { value: "#162993" },
-    opacity: { value: 0.6 },
-    size: { value: 3 },
-    move: { enable: true, speed: 0.9 },
+    number: { value: 50 },
+    color: { value: "#0076DF" },
+    opacity: { value: 0.5 },
+    size: { value: 2.5 },
+    move: { enable: true, speed: 0.6 },
     links: {
       enable: true,
-      color: "#ffffff",
-      opacity: 0.35,
-      distance: 130,
-    },
-  },
-  background: { color: "#b2b2b2" },
+      color: "#0076DF",
+      opacity: 0.25,
+      distance: 130
+    }
+  }
 });
 </script>
 
-<div class="hero" style="position:relative; z-index:1;">
+<div class="hero">
   <h1>📊 Economía y Políticas Públicas</h1>
   <p class="lead">
     Hub de información económica sobre Chile y el mundo, construido con datos públicos e interactivos.
   </p>
-  <a href="pages/economia.qmd" class="btn btn-success btn-lg me-2">Ver PIB</a>
-  <a href="pages/finanzas_publicas.qmd" class="btn btn-info btn-lg me-2">Ver Finanzas Públicas</a>
-  <a href="pages/educacion.qmd" class="btn btn-warning btn-lg me-2">Ver Educación</a>
-  <a href="pages/datos.qmd" class="btn btn-danger btn-lg">Ver Datos</a>
+  <a href="pages/economia.qmd" class="btn nw-btn me-2">Ver PIB</a>
+  <a href="pages/finanzas_publicas.qmd" class="btn nw-btn me-2">Ver Finanzas Públicas</a>
+  <a href="pages/educacion.qmd" class="btn nw-btn-outline me-2">Ver Educación</a>
+  <a href="pages/datos.qmd" class="btn nw-btn-outline">Ver Datos</a>
 </div>
 ```
 
@@ -55,27 +56,39 @@ tsParticles.load("particles-js", {
 ::: {.grid}
 
 ::: {.g-col-12 .g-col-md-3}
+::: {.nw-feature-card}
 ### 📈 PIB
 Crecimiento económico de Chile desde 1997, con datos del Banco Central.
+
 [Ver análisis →](pages/economia.qmd)
 :::
+:::
 
 ::: {.g-col-12 .g-col-md-3}
+::: {.nw-feature-card}
 ### 🏛️ Finanzas Públicas
 Deuda bruta y neta del sector público consolidado como % del PIB.
+
 [Ver análisis →](pages/finanzas_publicas.qmd)
 :::
-
-::: {.g-col-12 .g-col-md-3}
-### 🎓 Educación
-Análisis del Crédito con Aval del Estado (CAE).
-[Ver análisis →](pages/educacion.qmd)
 :::
 
 ::: {.g-col-12 .g-col-md-3}
+::: {.nw-feature-card}
+### 🎓 Educación
+Análisis del Crédito con Aval del Estado (CAE).
+
+[Ver análisis →](pages/educacion.qmd)
+:::
+:::
+
+::: {.g-col-12 .g-col-md-3}
+::: {.nw-feature-card}
 ### 📁 Datos
 Todas las fuentes son públicas y descargables.
+
 [Ver fuentes →](pages/datos.qmd)
+:::
 :::
 
 :::

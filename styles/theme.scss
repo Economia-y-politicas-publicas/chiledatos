@@ -1,0 +1,120 @@
+/*-- scss:defaults --*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+$font-family-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !default;
+$primary: #0076DF !default;
+$link-color: #0076DF !default;
+$border-radius: 0.5rem !default;
+
+/*-- scss:rules --*/
+
+:root {
+  --nw-primary: #0076DF;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  text-align: center;
+  padding: 6rem 1.5rem 4rem;
+}
+.hero h1 {
+  font-weight: 800;
+  font-size: 2.75rem;
+  margin-bottom: 1rem;
+}
+.hero .lead {
+  color: var(--nw-muted);
+  max-width: 640px;
+  margin: 0 auto 2rem;
+  font-size: 1.15rem;
+}
+
+/* ---------- Botones de un solo acento (nada de colores bootstrap arcoíris) ---------- */
+.nw-btn {
+  background: var(--nw-primary);
+  border: 1px solid var(--nw-primary);
+  color: #fff !important;
+}
+.nw-btn:hover {
+  filter: brightness(1.1);
+  color: #fff !important;
+}
+.nw-btn-outline {
+  background: transparent;
+  border: 1px solid var(--nw-border);
+  color: var(--nw-fg) !important;
+}
+.nw-btn-outline:hover {
+  border-color: var(--nw-primary);
+  color: var(--nw-primary) !important;
+}
+
+/* ---------- Tarjetas de la grilla "¿Qué encontrarás aquí?" ---------- */
+.nw-feature-card {
+  background: var(--nw-card);
+  border: 1px solid var(--nw-border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  height: 100%;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.nw-feature-card:hover {
+  border-color: var(--nw-primary);
+  transform: translateY(-2px);
+}
+.nw-feature-card h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+.nw-feature-card a {
+  color: var(--nw-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.nw-feature-card a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Quote block ---------- */
+.quote-block {
+  background: var(--nw-card);
+  border: 1px solid var(--nw-border);
+  border-left: 4px solid var(--nw-primary);
+  border-radius: 0.75rem;
+  padding: 2rem;
+  margin: 3rem 0;
+  text-align: center;
+}
+.quote-icon {
+  font-size: 2.5rem;
+  color: var(--nw-primary);
+  line-height: 1;
+}
+.quote-text {
+  font-size: 1.2rem;
+  font-style: italic;
+}
+.quote-attribution {
+  color: var(--nw-muted);
+  font-weight: 600;
+}
+.quote-cta a {
+  color: var(--nw-primary);
+  font-weight: 600;
+}
+
+.article-btn {
+  display: inline-block;
+  margin: 1rem 0 2rem;
+  color: var(--nw-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.article-btn:hover {
+  text-decoration: underline;
+}

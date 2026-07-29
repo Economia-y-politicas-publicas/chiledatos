@@ -1,0 +1,18 @@
+/*-- scss:defaults --*/
+
+$body-bg: #0a0a0f;
+$body-color: #e5e7eb;
+$navbar-bg: rgba(10, 10, 15, 0.85);
+$navbar-fg: #e5e7eb;
+$footer-bg: #0d0d12;
+$card-bg: #13131a;
+
+/*-- scss:rules --*/
+
+:root {
+  --nw-bg: #0a0a0f;
+  --nw-fg: #e5e7eb;
+  --nw-muted: #9ca3af;
+  --nw-card: #13131a;
+  --nw-border: #26262f;
+}
