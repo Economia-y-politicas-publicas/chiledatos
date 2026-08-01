@@ -9,8 +9,14 @@ website:
   title: "Economía y Políticas Públicas"
   description: "Hub de información económica sobre Chile y el mundo"
   site-url: "https://economia-y-politicas-publicas.github.io/chiledatos"
-  open-graph: true
-  twitter-card: true
+  favicon: imagenes/site/favicon.svg
+  open-graph:
+    image: imagenes/site/og-cover.png
+  twitter-card:
+    image: imagenes/site/og-cover.png
+  search:
+    location: navbar
+    type: overlay
   navbar:
     background: light
     foreground: dark
@@ -31,8 +37,14 @@ website:
         text: "Riesgo País"
       - href: pages/indicadores_vivo.qmd
         text: "📡 Indicadores en Vivo"
-      - href: pages/Cepal.qmd
-        text: "América Latina y el Caribe"
+      # ⚠️ Pendiente: pages/Cepal.qmd todavía apunta a un iframe con URL
+      # placeholder ("TU-USUARIO"). Descomenta cuando esté lista.
+      # - href: pages/Cepal.qmd
+      #   text: "América Latina y el Caribe"
+      # ⚠️ Pendiente: pages/gasto_municipal.qmd todavía no existe en el repo.
+      # Descomenta cuando crees el archivo, o el build se cae.
+      # - text: "Gasto Municipal"
+      #   href: pages/gasto_municipal.qmd
       - href: pages/Donaciones.qmd
         text: "Donaciones"
     right:

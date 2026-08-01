@@ -7,6 +7,16 @@ $navbar-fg: #e5e7eb;
 $footer-bg: #0d0d12;
 $card-bg: #13131a;
 
+// Lux (el tema base) fija estas variables en negro para fondos claros.
+// Si no se sobrescriben aquí, títulos y texto "emphasis" quedan casi
+// invisibles sobre un fondo oscuro, aunque $body-color ya esté bien.
+$headings-color: #e5e7eb;
+$body-emphasis-color: #e5e7eb;
+$body-secondary-color: #9ca3af;
+$body-tertiary-color: #6b7280;
+$border-color: #26262f;
+$link-color: #4da3ff;
+
 /*-- scss:rules --*/
 
 :root {
@@ -15,4 +25,13 @@ $card-bg: #13131a;
   --nw-muted: #9ca3af;
   --nw-card: #13131a;
   --nw-border: #26262f;
+}
+
+// Refuerzo directo por si algún componente de Quarto/Bootstrap
+// sigue usando su propio color fijo en vez de heredar $body-color
+h1, h2, h3, h4, h5, h6,
+#title-block-header .title,
+.quarto-title-banner .quarto-title .title,
+.nw-feature-card h3 {
+  color: var(--nw-fg) !important;
 }

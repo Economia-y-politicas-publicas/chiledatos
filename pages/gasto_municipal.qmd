@@ -1,0 +1,69 @@
+---
+title: "Gasto Municipal"
+---
+
+## Gasto Municipal — Presupuesto Abierto
+
+Datos de ejecución de gasto a nivel de comuna, obtenidos directamente desde la API interna de [Presupuesto Abierto](https://presupuestoabierto.gob.cl/municipalities) (Dirección de Presupuestos, Ministerio de Hacienda).
+
+```{python}
+import pandas as pd
+import requests
+import json
+from urllib.parse import quote
+import plotly.express as px
+
+# --- Parámetros de consulta ---
+# Código de región (2 dígitos) y código de comuna (5 dígitos, estándar INE/SUBDERE)
+REGION = "08"       # Ej: 08 = Biobío
+COMUNA = "08101"    # Ej: 08101 = Concepción
+PERIODO = 2024      # Año de ejecución presupuestaria
+
+BASE_URL = "https://api.presupuestoabierto.gob.cl/api/v1/data/municipios.csv"
+
+params = {
+    "group-by": json.dumps(["beneficiario"]),
+    "where": json.dumps({"region": REGION, "comuna": COMUNA, "periodo": PERIODO}),
+    "select": json.dumps(["nombre_beneficiario"]),
+    "order-by": json.dumps(["sum", "desc"]),
+    "limit": 500,
+}
+
+url = BASE_URL + "?" + "&".join(f"{k}={quote(str(v))}" for k, v in params.items())
+
+df = pd.read_csv(url)
+df.head()
+```
+
+### Top receptores de gasto en la comuna seleccionada
+
+```{python}
+top10 = df.sort_values("sum", ascending=False).head(10)
+
+fig = px.bar(
+    top10,
+    x="sum",
+    y="nombre_beneficiario",
+    orientation="h",
+    labels={"sum": "Monto ejecutado (CLP)", "nombre_beneficiario": "Beneficiario / Proveedor"},
+    title=f"Top 10 receptores de gasto municipal — Comuna {COMUNA} ({PERIODO})",
+)
+fig.update_layout(yaxis={"categoryorder": "total ascending"})
+fig
+```
+
+### Cómo cambiar de comuna
+
+Reemplaza `REGION`, `COMUNA` y `PERIODO` en el bloque de código de arriba. Los códigos de comuna siguen el estándar SUBDERE/INE de 5 dígitos (ej: `13101` = Santiago, `05101` = Valparaíso).
+
+::: {.callout-note}
+Esta consulta usa el endpoint interno que alimenta el [Monitor de Gasto Municipal](https://presupuestoabierto.gob.cl/municipalities) de Presupuesto Abierto. No es una API pública documentada oficialmente por DIPRES — si en algún momento cambia de estructura o deja de responder, hay descargas masivas en `.gz` por año disponibles en [Acerca de los Datos](https://presupuestoabierto.gob.cl/about-data), que son la fuente oficial y estable.
+:::
+
+## Fuente
+
+| Dataset | Fuente | Acceso |
+|---|---|---|
+| Gasto municipal transaccional | DIPRES — Presupuesto Abierto | [presupuestoabierto.gob.cl/municipalities](https://presupuestoabierto.gob.cl/municipalities) |
+
+Licencia de los datos: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Cita sugerida: *Dirección de Presupuestos (2024). Presupuesto Abierto. Santiago de Chile.*

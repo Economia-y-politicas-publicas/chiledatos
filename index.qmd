@@ -46,7 +46,7 @@ tsParticles.load("particles-js", {
   </p>
   <a href="pages/economia.qmd" class="btn nw-btn me-2">Ver PIB</a>
   <a href="pages/finanzas_publicas.qmd" class="btn nw-btn me-2">Ver Finanzas Públicas</a>
-  <a href="pages/educacion.qmd" class="btn nw-btn-outline me-2">Ver Educación</a>
+  <a href="pages/Inflacion.qmd" class="btn nw-btn-outline me-2">Ver Inflación</a>
   <a href="pages/datos.qmd" class="btn nw-btn-outline">Ver Datos</a>
 </div>
 ```
@@ -55,7 +55,7 @@ tsParticles.load("particles-js", {
 
 ::: {.grid}
 
-::: {.g-col-12 .g-col-md-3}
+::: {.g-col-12 .g-col-md-4}
 ::: {.nw-feature-card}
 ### 📈 PIB
 Crecimiento económico de Chile desde 1997, con datos del Banco Central.
@@ -64,7 +64,7 @@ Crecimiento económico de Chile desde 1997, con datos del Banco Central.
 :::
 :::
 
-::: {.g-col-12 .g-col-md-3}
+::: {.g-col-12 .g-col-md-4}
 ::: {.nw-feature-card}
 ### 🏛️ Finanzas Públicas
 Deuda bruta y neta del sector público consolidado como % del PIB.
@@ -73,21 +73,61 @@ Deuda bruta y neta del sector público consolidado como % del PIB.
 :::
 :::
 
-::: {.g-col-12 .g-col-md-3}
+::: {.g-col-12 .g-col-md-4}
 ::: {.nw-feature-card}
-### 🎓 Educación
-Análisis del Crédito con Aval del Estado (CAE).
+### 💸 Inflación
+UF, IVP, UTM e Índice de Precios al Consumidor.
 
-[Ver análisis →](pages/educacion.qmd)
+[Ver análisis →](pages/Inflacion.qmd)
 :::
 :::
 
-::: {.g-col-12 .g-col-md-3}
+::: {.g-col-12 .g-col-md-4}
+::: {.nw-feature-card}
+### 👷 Mercado Laboral
+Empleo y desempleo en Chile según la Encuesta Nacional de Empleo (ENE).
+
+[Ver análisis →](pages/trabajo.qmd)
+:::
+:::
+
+::: {.g-col-12 .g-col-md-4}
+::: {.nw-feature-card}
+### 🌎 Riesgo País
+EMBI Global Diversified — serie histórica y comparación regional.
+
+[Ver análisis →](pages/riesgo_pais.qmd)
+:::
+:::
+
+::: {.g-col-12 .g-col-md-4}
+::: {.nw-feature-card}
+### 📡 Indicadores en Vivo
+Datos diarios del Banco Central de Chile.
+
+[Ver indicadores →](pages/indicadores_vivo.qmd)
+:::
+:::
+
+:::
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-6}
 ::: {.nw-feature-card}
 ### 📁 Datos
 Todas las fuentes son públicas y descargables.
 
 [Ver fuentes →](pages/datos.qmd)
+:::
+:::
+
+::: {.g-col-12 .g-col-md-6}
+::: {.nw-feature-card}
+### 📰 Noticias
+Análisis y coyuntura económica, publicados a medida que salen los datos.
+
+[Ver noticias →](pages/noticias/index.qmd)
 :::
 :::
 
