@@ -46,6 +46,24 @@ def obtener_serie(codigo, dias=9000):
       
 ```
 
+## ¿Qué es el Imacec?
+
+El **Imacec (Índice Mensual de Actividad Económica)** es el termómetro más rápido que existe sobre la marcha de la economía chilena. Lo publica el Banco Central todos los meses y resume, en un solo número, cuánto produjo el país en bienes y servicios durante ese mes.
+
+Piénsalo como una versión mensual y preliminar del PIB: mientras el PIB se calcula trimestralmente y con más detalle, el Imacec entrega una foto rápida —aunque menos precisa— de si la economía se está expandiendo o contrayendo *mes a mes*.
+
+El índice está construido con **base 2018 = 100**. Esto significa que un valor de, por ejemplo, 110 no dice "creció 10% este mes", sino que el nivel de actividad económica es un 10% mayor que el promedio de 2018. Lo que casi siempre importa no es el nivel del índice, sino **su variación en el tiempo** (por eso los gráficos de barras que vienen a continuación son más relevantes que el nivel del índice para el lector no especializado).
+
+**¿Qué significan los componentes?**
+
+- **Minería**: valor agregado de la minería del cobre y otras actividades mineras.
+- **Resto de bienes**: agropecuario-silvícola, pesca, energía/gestión de desechos (EGA) y construcción.
+- **Servicios**: restaurantes y hoteles, transporte, comunicaciones, servicios financieros, empresariales, inmobiliarios, personales y administración pública.
+- **A costo de factores**: el Imacec sin el efecto de los impuestos netos a los productos (como el IVA).
+- **No minero**: el Imacec excluyendo la actividad minera, útil para ver cómo le va al "resto" de la economía sin el ruido del cobre.
+
+Puedes activar o desactivar cada componente haciendo clic en la leyenda del gráfico, para comparar cómo se mueve cada sector frente al índice general.
+
 ## IMACEC
 
 ```{python}
@@ -202,6 +220,18 @@ fig_var_normal.show()
 
 ```
 
+El gráfico anterior muestra el **nivel** del índice a lo largo del tiempo. Una línea que sube indica que la actividad económica de ese sector está por encima de su nivel de 2018; una que baja, lo contrario. Es útil para ver la tendencia de largo plazo, pero para saber "cómo le está yendo a la economía este mes" conviene mirar la variación, que es lo que muestra el gráfico siguiente.
+
+Esta variación **interanual** compara el nivel de actividad de un mes con el mismo mes del año anterior (por ejemplo, julio 2026 vs. julio 2025). Es la forma más común de leer el Imacec en las noticias: cuando dicen "el Imacec creció 2,1% en doce meses", se refieren a este número.
+
+Las barras en **verde** indican que la actividad creció respecto a un año atrás; las barras en **rojo**, que cayó. Como compara el mismo mes en dos años distintos, esta medida ya viene "limpia" del efecto estacional (no hay que preocuparse de que diciembre siempre tenga más actividad por las fiestas, por ejemplo, porque se compara diciembre con diciembre).
+
+### Serie desestacionalizada
+
+Los gráficos anteriores usan la serie **original**, que incluye efectos propios del calendario: por ejemplo, un mes con más días hábiles, o la mayor actividad de comercio en diciembre por las fiestas. Estos patrones se repiten todos los años y pueden "ensuciar" la comparación entre meses consecutivos.
+
+La serie **desestacionalizada** corrige estos efectos mediante un método estadístico (X-13 ARIMA-SEATS) para dejar a la vista solo los movimientos que realmente reflejan cambios en la actividad económica. Gracias a esto, se puede comparar de forma más limpia un mes con el mes inmediatamente anterior, que es lo que muestra el gráfico de variación intermensual más abajo.
+
 ```{python}
 
 imacec_desestacionalizado = obtener_serie("F032.IMC.IND.Z.Z.EP18.Z.Z.1.M")
@@ -357,6 +387,10 @@ fig_var.show()
 
 
 ```
+
+Esta variación **intermensual** (o "mes contra mes anterior") usa la serie desestacionalizada y muestra si la actividad económica avanzó o retrocedió respecto al mes inmediatamente anterior, ya sin el ruido de patrones estacionales. Es una medida más sensible: al comparar periodos tan cercanos, tiende a ser más volátil que la variación interanual, por lo que un solo mes negativo no necesariamente anticipa una recesión — conviene mirar la tendencia de varios meses seguidos antes de sacar conclusiones.
+
+> 💡 **Dato clave para el lector no especializado**: si quieres saber "cómo va la economía este año", mira la variación **interanual**. Si quieres detectar un cambio de tendencia reciente (por ejemplo, si la economía se está empezando a frenar), la variación **intermensual desestacionalizada** es más útil, aunque hay que leerla con cautela mes a mes.
 
 ## ¿Qué es el PIB?
 
@@ -515,6 +549,160 @@ La siguiente imagen muestra el componente ciclico del PIB y del Consumo Total (*
 from IPython.display import Image
 Image("../imagenes/economia/consumototal.png", width=800)
 ```
+
+
+
+
+```{python}
+#| label: grafico-ciclo-completo
+
+import pandas as pd
+import plotly.graph_objects as go
+
+# --- Cargar datos ---
+df = pd.read_csv("data/Economia/ciclo_hp_chile.csv")
+
+# --- Conversión robusta de 'periodo' (formato "mar.1996") a datetime ---
+meses_es = {
+    "ene": "01", "feb": "02", "mar": "03", "abr": "04",
+    "may": "05", "jun": "06", "jul": "07", "ago": "08",
+    "sep": "09", "oct": "10", "nov": "11", "dic": "12",
+}
+
+def parsear_periodo(serie):
+    s = serie.astype(str).str.strip().str.lower()
+    partes = s.str.split(".", expand=True)  # ["mar", "1996"]
+    mes = partes[0].map(meses_es)
+    anio = partes[1]
+    fecha_str = anio + "-" + mes + "-01"
+    return pd.to_datetime(fecha_str, format="%Y-%m-%d")
+
+df["periodo"] = parsear_periodo(df["periodo"])
+
+assert df["periodo"].notna().all(), "Revisa el formato de 'periodo': quedaron valores no reconocidos."
+
+df = df.sort_values("periodo").reset_index(drop=True)
+
+# --- Grupos por patrón de línea ---
+grupo_consumo = {
+    "cyc_ct":  "Consumo Total",
+    "cyc_ch":  "Consumo Hogares e IPSFL",
+    "cyc_bd":  "Bienes Durables",
+    "cyc_bnd": "Bienes No Durables",
+    "cyc_srv": "Servicios",
+    "cyc_cg":  "Consumo Gobierno",
+}
+
+grupo_inversion = {
+    "cyc_fbkf": "Inversión (FBCF)",
+    "cyc_mye":  "Maquinaria y Equipo",
+    "cyc_cons": "Construcción y Otras Obras",
+}
+
+grupo_comercio = {
+    "cyc_x": "Exportaciones",
+    "cyc_m": "Importaciones",
+}
+
+# --- Colores llamativos, uno por serie ---
+colores = {
+    "cyc_ct":   "#E63946",
+    "cyc_ch":   "#F4A300",
+    "cyc_bd":   "#2EC4B6",
+    "cyc_bnd":  "#8338EC",
+    "cyc_srv":  "#FF006E",
+    "cyc_cg":   "#06A77D",
+    "cyc_fbkf": "#118AB2",
+    "cyc_mye":  "#EF476F",
+    "cyc_cons": "#FFD166",
+    "cyc_x":    "#073B4C",
+    "cyc_m":    "#7209B7",
+}
+
+patron_consumo   = "dash"
+patron_inversion = "dot"
+patron_comercio  = "dashdot"
+
+fig = go.Figure()
+
+fig.add_hline(y=0, line_width=1, line_color="gray", opacity=0.7)
+
+fig.add_trace(go.Scatter(
+    x=df["periodo"], y=df["cyc_pib"],
+    mode="lines", name="PIB",
+    line=dict(color="#27365D", width=3),
+    visible=True,
+))
+
+for i, (col, nombre) in enumerate(grupo_consumo.items()):
+    fig.add_trace(go.Scatter(
+        x=df["periodo"], y=df[col],
+        mode="lines", name=nombre,
+        line=dict(color=colores[col], width=2, dash=patron_consumo),
+        visible=True if col == "cyc_ct" else "legendonly",
+    ))
+
+for col, nombre in grupo_inversion.items():
+    fig.add_trace(go.Scatter(
+        x=df["periodo"], y=df[col],
+        mode="lines", name=nombre,
+        line=dict(color=colores[col], width=2, dash=patron_inversion),
+        visible="legendonly",
+    ))
+
+for col, nombre in grupo_comercio.items():
+    fig.add_trace(go.Scatter(
+        x=df["periodo"], y=df[col],
+        mode="lines", name=nombre,
+        line=dict(color=colores[col], width=2, dash=patron_comercio),
+        visible="legendonly",
+    ))
+
+fig.update_layout(
+    title=dict(
+        text="Componente Cíclico: PIB y Componentes del Gasto"
+             "<br><span style='font-size:13px;color:gray'>Filtro Hodrick-Prescott (λ=1600)</span>",
+        x=0.5, xanchor="center", yanchor="top",
+    ),
+    xaxis_title="Trimestre",
+    yaxis_title="Desviación log de tendencia",
+    template="plotly_white",
+    hovermode="x unified",
+    legend=dict(
+        orientation="h",
+        yanchor="top", y=-0.45,
+        xanchor="center", x=0.5,
+        entrywidth=0.25,
+        entrywidthmode="fraction",
+        tracegroupgap=20,
+        font=dict(size=9),
+    ),
+    margin=dict(l=70, r=40, t=70, b=210),
+)
+
+fig.update_xaxes(
+    dtick="M12",
+    tick0=f"{df['periodo'].dt.year.min()}-01-01",
+    tickformat="%Y",           # lo que se ve en el eje: solo el año
+    hoverformat="%b %Y",       # lo que se ve al pasar el cursor: mes + año
+    showgrid=False,
+)
+
+fig.update_yaxes(showgrid=True, gridcolor="#e8e8e8")
+
+fig.add_annotation(
+    text="Fuente: Banco Central de Chile. Gráfico: Juan Enrique Miguieles.",
+    xref="paper", yref="paper",
+    x=0.5, y=-0.85,
+    showarrow=False,
+    font=dict(size=10, color="gray"),
+    xanchor="left",
+)
+
+fig.show()
+```
+
+
 
 ------------------------------------------------------------------------
 

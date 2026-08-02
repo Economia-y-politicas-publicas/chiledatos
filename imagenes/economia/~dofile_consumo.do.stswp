@@ -192,7 +192,7 @@ twoway ///
     ytitle("Desviación log de tendencia") xtitle("Trimestre") ///
     legend(label(1 "PIB") label(2 "Exportaciones"))		
 
-*Gráfico 9. Ciclo pib y importaciones de bienes y servicios		
+*Gráfico 10. Ciclo pib y importaciones de bienes y servicios		
 twoway ///
     (line cyc_pib tiempo, lcolor(navy) lwidth(medthick)) ///
     (line cyc_m  tiempo, lcolor(red)  lpattern(dash)), ///
