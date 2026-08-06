@@ -1,0 +1,94 @@
+---
+title: "Fondo Común Municipal"
+description: "Fondo Común Municipal por habitante"
+author: "Redacción"
+date: 2026-08-05
+categories: [Comunas, Municipalidades, SINIM, INE]
+image: "../../../imagenes/noticias/5_de_agosto/01_Región_de_Arica_y_Parinacota.png"
+image-alt: "Fondo Común Municipal por habitante"
+title-block-banner: true
+code-tools: false
+filters:
+  - lightbox
+lightbox: auto
+---
+
+🇨🇱 ¿Cómo se distribuyen los recursos entre las comunas de Chile? La radiografía al Fondo Común Municipal por habitante (FCM). 📊
+
+El Fondo Común Municipal es el principal mecanismo de redistribución solidaria de los ingresos municipales en nuestro país. Su objetivo es claro: garantizar que todas las comunas, independientemente de sus ingresos propios, puedan entregar servicios básicos a sus habitantes. Pero, ¿cuántos recursos recibe realmente cada comuna por habitante?
+
+📉 Las que reciben menos (FCM per cápita):
+
+En la parte baja de la tabla encontramos principalmente a las comunas del sector oriente de Santiago y grandes capitales regionales. Estas comunas son, por diseño del sistema, las que más aportan al fondo y las que menos perciben de vuelta por habitante.
+
+🔹 Las Condes: $17.842
+🔹 Ñuñoa: $18.575
+🔹 Lo Barnechea: $24.011
+🔹 Providencia: $24.374
+
+(También destacan en este grupo San Miguel, Vitacura, La Reina, Santiago, Iquique, Viña del Mar y Colina).
+
+📈 Las que reciben más (FCM per cápita):
+
+En el otro extremo, el Top 10 está dominado por comunas de zonas extremas (principalmente en Magallanes, Aysén y el norte grande). Al tener una población muy reducida y necesidades de conectividad e infraestructura inmensas, el aporte per cápita se dispara.
+
+🔸 Río Verde: $17.411.157
+🔸 Timaukel: $12.038.911
+🔸 Torres del Paine: $8.849.335
+🔸 Ollagüe: $8.471.758
+
+🗺️ Desliza en el carrusel para ver los mapas de distribución de la zona norte, centro, sur y austral y notar cómo el territorio y la densidad poblacional juegan un rol clave en la asignación de recursos públicos.
+
+¿Qué te parece esta forma de redistribución? ¿Es suficiente para acortar la brecha de desigualdad territorial? Te leo en los comentarios. 👇
+
+@economia.y.politicas.publicas
+
+—
+#EconomiaYPoliticasPublicas #FCM #Descentralizacion #EconomiaChilena #PoliticasPublicas Municipalidades Chile Datos VisualizacionDeDatos
+
+![Diferencias en los promedios y en las medianas](../../../imagenes/noticias/5_de_agosto/01_Región_de_Arica_y_Parinacota.png){#fig-promedio_mediana fig-alt="Diferencias en los promedios y en las medianas"}
+
+<br>
+
+### Desglose por Regiones
+
+A continuación, puedes explorar los gráficos de la brecha salarial desglosados para las 16 regiones del país:
+
+::: {layout-ncol="4"}
+![Región de Arica y Parinacota](../../../imagenes/noticias/5_de_agosto/01_Región_de_Arica_y_Parinacota.png)
+
+![Región de Tarapacá](../../../imagenes/noticias/5_de_agosto/02_Región_de_Tarapacá.png)
+
+![Región de Antofagasta](../../../imagenes/noticias/5_de_agosto/03_Región_de_Antofagasta.png)
+
+![Región de Atacama](../../../imagenes/noticias/5_de_agosto/04_Región_de_Atacama.png)
+
+![Región de Coquimbo](../../../imagenes/noticias/5_de_agosto/05_Región_de_Coquimbo.png)
+
+![Región de Valparaíso](../../../imagenes/noticias/5_de_agosto/06_Región_de_Valparaíso.png)
+
+![Región Metropolitana de Santiago](../../../imagenes/noticias/5_de_agosto/07_Región_Metropolitana_de_Santiago.png)
+
+![Región del Libertador General Bernardo O'Higgins](../../../imagenes/noticias/5_de_agosto/08_Región_del_Libertador_General_Bernardo_O'Higgins.png)
+
+![Región del Maule](../../../imagenes/noticias/5_de_agosto/09_Región_del_Maule.png)
+
+![Región de Ñuble](../../../imagenes/noticias/5_de_agosto/10_Región_de_Ñuble.png)
+
+![Región del Biobío](../../../imagenes/noticias/5_de_agosto/11_Región_del_Biobío.png)
+
+![Región de La Araucanía](../../../imagenes/noticias/5_de_agosto/12_Región_de_La_Araucanía.png)
+
+![Región de Los Ríos](../../../imagenes/noticias/5_de_agosto/13_Región_de_Los_Ríos.png)
+
+![Región de Los Lagos](../../../imagenes/noticias/5_de_agosto/14_Región_de_Los_Lagos.png)
+
+![Región de Aysén del General Carlos Ibáñez del Campo](../../../imagenes/noticias/5_de_agosto/15_Región_de_Aysén_del_General_Carlos_Ibáñez_del_Campo.png)
+
+![Región de Magallanes y de la Antártica Chilena](../../../imagenes/noticias/5_de_agosto/16_Región_de_Magallanes_y_de_la_Antártica_Chilena.png)
+
+![Chile Continental](../../../imagenes/noticias/5_de_agosto/Mapa_chile_continental.png)
+
+![Ciudad de Santiago, 32 comunas](../../../imagenes/noticias/5_de_agosto/Mapa_rm_transparente.png)
+
+:::

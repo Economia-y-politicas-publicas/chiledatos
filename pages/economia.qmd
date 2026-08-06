@@ -43,7 +43,6 @@ def obtener_serie(codigo, dias=9000):
         print(f"Error cargando {codigo}: {e}")
         return pd.DataFrame(columns=["fecha", "valor"])
 
-      
 ```
 
 ## ¿Qué es el Imacec?
@@ -144,8 +143,15 @@ fig_imacec.add_annotation(
 )
 
 fig_imacec.show()
+```
 
+El gráfico muestra el **nivel** del índice a lo largo del tiempo. Una línea que sube indica que la actividad económica de ese sector está por encima de su nivel de 2018; una que baja, lo contrario. Es útil para ver la tendencia de largo plazo, pero para saber "cómo le está yendo a la economía este mes" conviene mirar la variación, que es lo que muestra el gráfico siguiente.
 
+Esta variación **interanual** compara el nivel de actividad de un mes con el mismo mes del año anterior (por ejemplo, julio 2026 vs. julio 2025). Es la forma más común de leer el Imacec en las noticias: cuando dicen "el Imacec creció 2,1% en doce meses", se refieren a este número.
+
+Las barras en **verde** indican que la actividad creció respecto a un año atrás; las barras en **rojo**, que cayó. Como compara el mismo mes en dos años distintos, esta medida ya viene "limpia" del efecto estacional (no hay que preocuparse de que diciembre siempre tenga más actividad por las fiestas, por ejemplo, porque se compara diciembre con diciembre).
+
+```{python}
 import plotly.graph_objects as go
 
 series_dict1 = {
@@ -220,11 +226,6 @@ fig_var_normal.show()
 
 ```
 
-El gráfico anterior muestra el **nivel** del índice a lo largo del tiempo. Una línea que sube indica que la actividad económica de ese sector está por encima de su nivel de 2018; una que baja, lo contrario. Es útil para ver la tendencia de largo plazo, pero para saber "cómo le está yendo a la economía este mes" conviene mirar la variación, que es lo que muestra el gráfico siguiente.
-
-Esta variación **interanual** compara el nivel de actividad de un mes con el mismo mes del año anterior (por ejemplo, julio 2026 vs. julio 2025). Es la forma más común de leer el Imacec en las noticias: cuando dicen "el Imacec creció 2,1% en doce meses", se refieren a este número.
-
-Las barras en **verde** indican que la actividad creció respecto a un año atrás; las barras en **rojo**, que cayó. Como compara el mismo mes en dos años distintos, esta medida ya viene "limpia" del efecto estacional (no hay que preocuparse de que diciembre siempre tenga más actividad por las fiestas, por ejemplo, porque se compara diciembre con diciembre).
 
 ### Serie desestacionalizada
 
@@ -305,8 +306,13 @@ fig_imacec1.add_annotation(
 
 fig_imacec1.show()
 
+```
 
+Esta variación **intermensual** (o "mes contra mes anterior") usa la serie desestacionalizada y muestra si la actividad económica avanzó o retrocedió respecto al mes inmediatamente anterior, ya sin el ruido de patrones estacionales. Es una medida más sensible: al comparar periodos tan cercanos, tiende a ser más volátil que la variación interanual, por lo que un solo mes negativo no necesariamente anticipa una recesión — conviene mirar la tendencia de varios meses seguidos antes de sacar conclusiones.
 
+> 💡 **Dato clave para el lector no especializado**: si quieres saber "cómo va la economía este año", mira la variación **interanual**. Si quieres detectar un cambio de tendencia reciente (por ejemplo, si la economía se está empezando a frenar), la variación **intermensual desestacionalizada** es más útil, aunque hay que leerla con cautela mes a mes.
+
+```{python}
 
 import plotly.graph_objects as go
 
@@ -388,9 +394,7 @@ fig_var.show()
 
 ```
 
-Esta variación **intermensual** (o "mes contra mes anterior") usa la serie desestacionalizada y muestra si la actividad económica avanzó o retrocedió respecto al mes inmediatamente anterior, ya sin el ruido de patrones estacionales. Es una medida más sensible: al comparar periodos tan cercanos, tiende a ser más volátil que la variación interanual, por lo que un solo mes negativo no necesariamente anticipa una recesión — conviene mirar la tendencia de varios meses seguidos antes de sacar conclusiones.
 
-> 💡 **Dato clave para el lector no especializado**: si quieres saber "cómo va la economía este año", mira la variación **interanual**. Si quieres detectar un cambio de tendencia reciente (por ejemplo, si la economía se está empezando a frenar), la variación **intermensual desestacionalizada** es más útil, aunque hay que leerla con cautela mes a mes.
 
 ## ¿Qué es el PIB?
 
@@ -542,14 +546,39 @@ Image("../imagenes/economia/ciclo_tendencia_estacionalidad.png", width=800)
 
 Para ello se utilizó las series de gasto desestacionalizadas y transformadas en logaritmos.
 
-La siguiente imagen muestra el componente ciclico del PIB y del Consumo Total (**Hogares e IPSFL y Gobierno**). Esto representa desviación porcentuales respecto a su tendencia. Cabe mencionar que el Producto y el Consumo se mueven a la par hasta la crisis del Covid-19 durante 2020, los IFes y los 3 retiros de pensiones presionaron el Consumo Total muy por sobre su tendencia.
+## Componente cíclico del gasto: ¿qué estamos mirando?
 
-```{python}
-#| echo: false
-from IPython.display import Image
-Image("../imagenes/economia/consumototal.png", width=800)
-```
+Cuando la economía crece, no lo hace de forma perfectamente pareja. Hay años de expansión y años de contracción, meses buenos y meses malos —eso es lo que llamamos el **ciclo económico**. El gráfico siguiente aísla justamente esa parte "cíclica" del PIB y sus componentes de gasto, dejando fuera el crecimiento de largo plazo, para que puedas ver con claridad cuándo la economía estuvo por encima o por debajo de su ritmo habitual.
 
+### ¿De dónde salen los datos?
+
+Los datos corresponden al **gasto del PIB** —es decir, en qué se usó todo lo que Chile produjo: consumo de los hogares, gasto del gobierno, inversión de las empresas, exportaciones e importaciones. Se trata de series:
+
+- **A volumen, no a valor**: descuentan el efecto de la inflación, para que las comparaciones entre años reflejen cantidades reales de bienes y servicios, no solo alzas de precios.
+- **Desestacionalizadas**: se les quitan los patrones que se repiten todos los años en la misma época (como más consumo en diciembre por las fiestas), para poder comparar un trimestre con el anterior sin ese "ruido".
+- **Con referencia 2018**: el nivel de estos indicadores se ancla al año 2018, siguiendo el estándar que usa el Banco Central de Chile.
+
+### ¿Qué significa "componente cíclico"?
+
+Imagina que dibujas la trayectoria de la economía chilena en los últimos 30 años: verías una línea que sube de forma sostenida en el tiempo (la **tendencia**), pero que además zigzaguea alrededor de esa tendencia —a veces por arriba, a veces por abajo (el **ciclo**).
+
+Para separar ambas cosas se usa el **filtro de Hodrick-Prescott (HP)**, una técnica estadística estándar en macroeconomía que estima cuál sería la trayectoria "normal" o de largo plazo de cada serie, y luego calcula qué tan lejos estuvo el dato real de esa trayectoria en cada trimestre. Ese "qué tan lejos" es justamente lo que ves graficado.
+
+### ¿Cómo se lee el eje vertical?
+
+El eje Y muestra la **desviación porcentual aproximada respecto a la tendencia**, expresada en logaritmos (una convención común en economía porque simplifica el cálculo, pero que en la práctica se interpreta casi igual que un porcentaje):
+
+- **Un valor de 0** significa que la economía (o ese componente de gasto) estaba exactamente en su nivel de tendencia ese trimestre — ni por encima ni por debajo.
+- **Un valor positivo** (por ejemplo, 0.05) indica que la actividad estaba cerca de un 5% por encima de su tendencia de largo plazo — la economía venía "acelerada".
+- **Un valor negativo** (por ejemplo, -0.10) indica que estaba cerca de un 10% por debajo de su tendencia — la economía venía "frenada" o en una fase de contracción.
+
+### ¿Por qué comparar todo contra el PIB?
+
+La línea de **PIB** (en azul oscuro) queda siempre visible como referencia, porque es el resumen de toda la economía. Al activar cada componente de gasto desde la leyenda, puedes ver si ese componente se mueve **al mismo tiempo que el PIB** (lo que en economía se llama procíclico), **en la dirección contraria** (contracíclico), o si se mueve con más fuerza o más suavidad que el PIB en su conjunto.
+
+Por ejemplo: la inversión (formación bruta de capital fijo) suele moverse con más violencia que el PIB —cuando la economía se frena, las empresas postergan proyectos de inversión de forma mucho más abrupta que lo que cae el consumo de los hogares. Ese tipo de patrones es justamente lo que este gráfico permite explorar.
+
+> 💡 **Cómo usar el gráfico**: haz clic en cualquier nombre de la leyenda para mostrar u ocultar esa serie, y compárala visualmente con la línea de PIB. Pasa el cursor sobre cualquier punto para ver el trimestre exacto y el valor de cada serie activa.
 
 
 
@@ -696,7 +725,7 @@ fig.add_annotation(
     x=0.5, y=-0.85,
     showarrow=False,
     font=dict(size=10, color="gray"),
-    xanchor="left",
+    xanchor="right",
 )
 
 fig.show()
