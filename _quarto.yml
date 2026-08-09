@@ -37,10 +37,8 @@ website:
         text: "Riesgo País"
       - href: pages/indicadores_vivo.qmd
         text: "📡 Indicadores en Vivo"
-      # ⚠️ Pendiente: pages/Cepal.qmd todavía apunta a un iframe con URL
-      # placeholder ("TU-USUARIO"). Descomenta cuando esté lista.
-      # - href: pages/Cepal.qmd
-      #   text: "América Latina y el Caribe"
+      - href: pages/Cepal.qmd
+      - text: "América Latina y el Caribe"
       # ⚠️ Pendiente: pages/gasto_municipal.qmd todavía no existe en el repo.
       # Descomenta cuando crees el archivo, o el build se cae.
       # - text: "Gasto Municipal"
