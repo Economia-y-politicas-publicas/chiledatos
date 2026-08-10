@@ -4,7 +4,6 @@ project:
   resources:
     - googleef02c443fa87502b.html
     - assets/time-theme.js
-
 website:
   title: "Economía y Políticas Públicas"
   description: "Hub de información económica sobre Chile y el mundo"
@@ -37,8 +36,8 @@ website:
         text: "Riesgo País"
       - href: pages/indicadores_vivo.qmd
         text: "📡 Indicadores en Vivo"
-      - href: pages/Cepal.qmd
-      - text: "América Latina y el Caribe"
+      - href: pages/america-latina-y-el-caribe/index.qmd
+        text: "América Latina y el Caribe"
       # ⚠️ Pendiente: pages/gasto_municipal.qmd todavía no existe en el repo.
       # Descomenta cuando crees el archivo, o el build se cae.
       # - text: "Gasto Municipal"
@@ -53,7 +52,6 @@ website:
     right:
       - icon: github
         href: https://github.com/Economia-y-politicas-publicas/chiledatos
-
 format:
   html:
     lang: es
@@ -72,7 +70,6 @@ format:
     highlight-style: github
     fig-width: 9
     fig-height: 5
-
 execute:
   freeze: auto
   echo: false

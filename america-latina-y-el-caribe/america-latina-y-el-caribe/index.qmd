@@ -1,0 +1,18 @@
+---
+pagetitle: "América Latina y el Caribe | Economía y Políticas Públicas"
+title: "América Latina y el Caribe"
+subtitle: "Indicadores económicos, sociales y ambientales de la región, con base en CEPALSTAT y otras fuentes oficiales."
+search: false
+repo-actions: false
+listing:
+  contents: posts
+  sort: "date desc"
+  type: grid
+  categories: true
+  sort-ui: false
+  filter-ui: false
+  page-size: 12
+  feed: true
+  fields: [image, date, title, description, categories, author]
+  image-height: "188px"
+---

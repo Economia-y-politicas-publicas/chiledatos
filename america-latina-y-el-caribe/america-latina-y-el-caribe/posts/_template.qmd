@@ -1,0 +1,22 @@
+---
+# PLANTILLA — no se publica (Quarto ignora archivos que empiezan con "_")
+# Para agregar una publicación nueva:
+#   1. Copia este archivo dentro de pages/america-latina-y-el-caribe/posts/
+#   2. Renómbralo como AAAA-MM-DD-titulo-corto.qmd
+#   3. Completa los campos de abajo y escribe el cuerpo debajo del "---"
+# La tarjeta en la grilla de /pages/america-latina-y-el-caribe/ se arma sola con estos campos.
+title: "Título de la publicación"
+description: "Resumen de 1-2 líneas que aparece en la tarjeta de listado."
+author: "Redacción"
+date: 2026-01-01
+categories: [CEPAL, Comercio Internacional]   # tags libres, tantos como aplique. Ir sumando a medida que se repiten.
+image: "../../../imagenes/latam/nombre-imagen.png"  # opcional, quitar la línea si no hay imagen
+image-alt: "Descripción de la imagen para lectores de pantalla"
+title-block-banner: true
+code-tools: false
+filters:
+  - lightbox
+lightbox: auto
+---
+
+Cuerpo de la publicación en párrafos normales de Markdown.
